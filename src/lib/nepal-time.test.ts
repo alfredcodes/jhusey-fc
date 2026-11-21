@@ -1,5 +1,33 @@
 import { describe, expect, it } from 'vitest'
-import { formatNepalDate, formatNepalTime } from './nepal-time.ts'
+import {
+  addDays,
+  formatCalendarDate,
+  formatNepalDate,
+  formatNepalTime,
+  nepalToday,
+} from './nepal-time.ts'
+
+describe('nepalToday', () => {
+  it('switches date at midnight Nepal time, not UTC midnight', () => {
+    // 18:14:59 UTC = 23:59:59 in Kathmandu; one second later it is the next day there.
+    expect(nepalToday(new Date('2026-11-21T18:14:59Z'))).toBe('2026-11-21')
+    expect(nepalToday(new Date('2026-11-21T18:15:00Z'))).toBe('2026-11-22')
+  })
+})
+
+describe('addDays', () => {
+  it('crosses month and year ends', () => {
+    expect(addDays('2026-11-30', 1)).toBe('2026-12-01')
+    expect(addDays('2026-12-31', 1)).toBe('2027-01-01')
+    expect(addDays('2026-03-01', -1)).toBe('2026-02-28')
+  })
+})
+
+describe('formatCalendarDate', () => {
+  it('formats a date without shifting it', () => {
+    expect(formatCalendarDate('2026-11-22')).toBe('Sun, 22 Nov 2026')
+  })
+})
 
 describe('formatNepalTime', () => {
   it('converts UTC to Nepal time (UTC+05:45)', () => {

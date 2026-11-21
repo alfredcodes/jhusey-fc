@@ -33,3 +33,39 @@ export function formatNepalTime(instant: Date): string {
 export function formatNepalDate(instant: Date): string {
   return dateFormatter.format(instant)
 }
+
+// en-CA formats dates as YYYY-MM-DD, the same shape PostgreSQL `date` values arrive in.
+const isoDateFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: NEPAL_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
+/** Today's Nepal date as "YYYY-MM-DD". Display/filtering only; the database decides for punch-in. */
+export function nepalToday(instant: Date = new Date()): string {
+  return isoDateFormatter.format(instant)
+}
+
+/** Adds whole days to a "YYYY-MM-DD" date. */
+export function addDays(isoDate: string, days: number): string {
+  const [year, month, day] = isoDate.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10)
+}
+
+const sessionDateFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'UTC',
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+})
+
+/**
+ * Formats a calendar date ("YYYY-MM-DD") such as a session date, e.g. "Sun, 22 Nov 2026".
+ * A date has no time zone, so it is formatted in UTC to stop it shifting by a day.
+ */
+export function formatCalendarDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-').map(Number)
+  return sessionDateFormatter.format(new Date(Date.UTC(year, month - 1, day)))
+}

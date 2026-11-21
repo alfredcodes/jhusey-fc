@@ -6,6 +6,12 @@ set search_path = public, extensions;
 
 select plan(22);
 
+-- Start from an empty slate. Everything runs in one transaction that is rolled
+-- back at the end, so real local data is untouched.
+delete from public.sessions;
+delete from public.venues;
+delete from auth.users;
+
 -- ---------------------------------------------------------------------------
 -- Fixtures: inserting into auth.users fires handle_new_user().
 -- ---------------------------------------------------------------------------

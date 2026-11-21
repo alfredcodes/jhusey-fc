@@ -9,7 +9,7 @@ import ForgotPasswordPage from './ForgotPasswordPage.tsx'
 import LoginPage from './LoginPage.tsx'
 import SetPasswordPage from './SetPasswordPage.tsx'
 
-const fake = vi.hoisted((): FakeState => ({ session: null, profile: null }))
+const fake = vi.hoisted((): FakeState => ({ session: null, profile: null, rows: {} }))
 
 vi.mock('../../lib/supabase.ts', async () => {
   const { buildFakeSupabase } = await import('../../test/supabase-mock.ts')

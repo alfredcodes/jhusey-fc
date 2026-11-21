@@ -4,7 +4,7 @@ import App from './App.tsx'
 import { renderWithProviders } from './test/render.tsx'
 import { sessionFor, type FakeState } from './test/supabase-mock.ts'
 
-const fake = vi.hoisted((): FakeState => ({ session: null, profile: null }))
+const fake = vi.hoisted((): FakeState => ({ session: null, profile: null, rows: {} }))
 
 vi.mock('./lib/supabase.ts', async () => {
   const { buildFakeSupabase } = await import('./test/supabase-mock.ts')
@@ -45,8 +45,8 @@ describe('signed in as a member', () => {
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument()
   })
 
-  it('cannot open the admin area', async () => {
-    renderWithProviders(<App />, { path: '/admin' })
+  it.each(['/admin', '/admin/sessions', '/admin/venues'])('cannot open %s', async (path) => {
+    renderWithProviders(<App />, { path })
     expect(await heading('Member dashboard')).toBeInTheDocument()
   })
 
@@ -59,9 +59,13 @@ describe('signed in as a member', () => {
 describe('signed in as the admin', () => {
   beforeEach(() => signInAs('admin'))
 
-  it('can open the admin dashboard', async () => {
-    renderWithProviders(<App />, { path: '/admin' })
-    expect(await heading('Admin dashboard')).toBeInTheDocument()
+  it.each([
+    ['/admin', 'Admin dashboard'],
+    ['/admin/sessions', 'Sessions'],
+    ['/admin/venues', 'Venues'],
+  ])('can open %s', async (path, name) => {
+    renderWithProviders(<App />, { path })
+    expect(await heading(name)).toBeInTheDocument()
   })
 
   it('sees a link to the admin area from the member view', async () => {

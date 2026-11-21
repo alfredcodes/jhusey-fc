@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router'
-import AuthCard, { FormError, inputClass, primaryButtonClass } from '../../components/AuthCard.tsx'
+import AuthCard from '../../components/AuthCard.tsx'
+import { FormError, inputClass, primaryButtonClass } from '../../components/form.tsx'
 import { supabase } from '../../lib/supabase.ts'
 import { useAuth } from './auth-context.ts'
 

@@ -51,15 +51,95 @@ export type Database = {
         }
         Relationships: []
       }
+      sessions: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          session_date: string
+          status: Database['public']['Enums']['session_status']
+          updated_at: string
+          venue_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          session_date: string
+          status?: Database['public']['Enums']['session_status']
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          session_date?: string
+          status?: Database['public']['Enums']['session_status']
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sessions_venue_id_fkey'
+            columns: ['venue_id']
+            isOneToOne: false
+            referencedRelation: 'venues'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      venues: {
+        Row: {
+          created_at: string
+          geofence_radius_m: number
+          id: string
+          is_active: boolean
+          latitude: number
+          longitude: number
+          name: string
+          updated_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          geofence_radius_m?: number
+          id?: string
+          is_active?: boolean
+          latitude: number
+          longitude: number
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          geofence_radius_m?: number
+          id?: string
+          is_active?: boolean
+          latitude?: number
+          longitude?: number
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      admin_create_sessions: {
+        Args: { p_from: string; p_to: string; p_venue_id: string; p_weekdays: number[] }
+        Returns: number
+      }
+      is_active_member: { Args: Record<PropertyKey, never>; Returns: boolean }
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
+      nepal_today: { Args: Record<PropertyKey, never>; Returns: string }
     }
     Enums: {
       app_role: 'admin' | 'member'
+      session_status: 'scheduled' | 'cancelled'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -175,6 +255,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ['admin', 'member'],
+      session_status: ['scheduled', 'cancelled'],
     },
   },
 } as const

@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
-import AuthCard, { FormError, inputClass, primaryButtonClass } from '../../components/AuthCard.tsx'
+import AuthCard from '../../components/AuthCard.tsx'
+import { FormError, inputClass, primaryButtonClass } from '../../components/form.tsx'
 import { supabase } from '../../lib/supabase.ts'
 
 export const MIN_PASSWORD_LENGTH = 8 // keep in sync with supabase/config.toml

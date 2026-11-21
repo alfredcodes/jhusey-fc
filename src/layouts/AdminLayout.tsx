@@ -1,6 +1,12 @@
-import { Link, Outlet } from 'react-router'
+import { Link, NavLink, Outlet } from 'react-router'
 import NepalClock from '../components/NepalClock.tsx'
 import SignOutButton from '../features/auth/SignOutButton.tsx'
+
+const navItems = [
+  { to: '/admin', label: 'Dashboard', end: true },
+  { to: '/admin/sessions', label: 'Sessions', end: false },
+  { to: '/admin/venues', label: 'Venues', end: false },
+]
 
 export default function AdminLayout() {
   return (
@@ -12,11 +18,27 @@ export default function AdminLayout() {
           </Link>
           <NepalClock />
         </div>
-        <div className="mx-auto flex max-w-5xl items-center justify-end gap-3 px-4 pb-3 text-sm">
-          <Link to="/" className="font-medium underline">
-            Member view
-          </Link>
-          <SignOutButton />
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 pb-3 text-sm">
+          <nav className="flex gap-1" aria-label="Admin">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  `rounded-md px-3 py-1 font-medium ${isActive ? 'bg-white text-slate-900' : 'hover:bg-slate-700'}`
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+          <span className="flex items-center gap-3">
+            <Link to="/" className="font-medium underline">
+              Member view
+            </Link>
+            <SignOutButton />
+          </span>
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-6">

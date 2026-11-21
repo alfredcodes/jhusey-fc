@@ -23,6 +23,8 @@
 | Auth email | Custom SMTP through Resend | Supabase built-in email only reaches project team addresses at a low rate limit (2026-11-21) |
 | Tooling | oxlint (Vite template default), Prettier, Vitest + Testing Library | Phase 1, 2026-11-21 |
 | Server state | TanStack Query from Phase 2 | Avoids hand-rolled fetch/loading/error effects |
+| Sessions | At most one per calendar date; admin generates by date range + weekdays; cancel (reversible) rather than delete once attendance exists | Phase 3, 2026-11-22 |
+| Venue and session data | Entered by the admin in the app, not hard-coded | Phase 3, 2026-11-22 |
 | Team attendance view | `security definer` RPC returning name + status only | A `security_invoker` view would apply own-row RLS and show only the caller |
 
 ## Superseded decision
