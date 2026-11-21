@@ -17,4 +17,5 @@
 15. **Manual attendance:** can the admin record attendance (without GPS) for a member whose phone failed at the venue? Affects nullable GPS columns.
 16. **Absence vs late:** a late member who does not punch in is Absent with no fine, which is cheaper than Late (NPR 50). Acknowledge, or define an absence rule?
 17. **Payment model:** proposal for v1: one confirmed payment covers one or more whole fines; no partial payments.
-18. **Phone numbers:** drop from v1, or store in a separate admin-only table?
+18. **Phone numbers:** drop from v1, or store in a separate admin-only table? (Phase 2 created no phone column.)
+19. **Email sending domain:** Resend only delivers to arbitrary recipients from a verified domain. `jhusey-fc.com` is not purchased. Before inviting real members, either buy the domain (or use another domain you own) and verify it in Resend, or choose another approach.

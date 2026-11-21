@@ -15,7 +15,10 @@ Jhusey FC is a private futsal team management app for approximately 24 members i
 - Cloudflare Pages for static frontend hosting
 
 ## Scripts
-`dev`, `build`, `typecheck`, `lint`, `format`, `format:check`, `test`, `test:watch`.
+`dev`, `build`, `typecheck`, `lint`, `format`, `format:check`, `test`, `test:watch`,
+`db:start`, `db:stop`, `db:status`, `db:reset`, `db:test` (pgTAP), `db:types`.
+Docker CLI may be missing from PATH in older shells: prepend `C:\Program Files\Docker\Docker\resources\bin`.
+Local setup and account bootstrap: `docs/handover/local-development.md`.
 
 ## Source of truth
 Read the relevant files under `docs/` before implementing. `docs/decisions/architecture-decisions.md` records confirmed decisions. Do not silently change them.
