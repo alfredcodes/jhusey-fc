@@ -1,17 +1,21 @@
 # Jhusey FC - Project Instructions
 
 ## Purpose
-Jhusey FC is a private futsal team management app for approximately 24 members in Nepal simple code not complexibility, not heavy code. It manages member accounts, recurring sessions, GPS punch-in, attendance, fines, manual payment records, announcements and reports.
+Jhusey FC is a private futsal team management app for approximately 24 members in Nepal. Keep the code simple and light; avoid unnecessary complexity. It manages member accounts, recurring sessions, GPS punch-in, attendance, fines, manual payment records, announcements and reports.
 
-## Stack
-- React + TypeScript + Vite
+## Stack (installed versions are newer than most training data; check `node_modules` before assuming an API)
+- React 19 + TypeScript 7 (strict) + Vite 8
+- React Router 8, declarative mode (`BrowserRouter`/`Routes`); no framework mode or SSR
+- Tailwind CSS v4 via `@tailwindcss/vite` (no `tailwind.config.js`, no PostCSS)
 - Supabase Auth + PostgreSQL + Row Level Security
-- Supabase Edge Functions or PostgreSQL RPC for sensitive server-side operations
-- Tailwind CSS; use a small accessible component layer only where it saves work
-- React Router
-- TanStack Query only for server-state caching if justified by the first implementation
-- Vitest + React Testing Library; Playwright for critical end-to-end flows
+- PostgreSQL RPC (`security definer`, `search_path = ''`) for sensitive operations; no Edge Functions unless a concrete need appears
+- TanStack Query from Phase 2 for server state
+- oxlint, Prettier, Vitest + React Testing Library; Playwright later, for critical flows only
+- Local Supabase via the CLI dev dependency + Docker Desktop
 - Cloudflare Pages for static frontend hosting
+
+## Scripts
+`dev`, `build`, `typecheck`, `lint`, `format`, `format:check`, `test`, `test:watch`.
 
 ## Source of truth
 Read the relevant files under `docs/` before implementing. `docs/decisions/architecture-decisions.md` records confirmed decisions. Do not silently change them.
@@ -35,7 +39,9 @@ Read the relevant files under `docs/` before implementing. `docs/decisions/archi
 - Enable RLS for every exposed table and write explicit grants/policies for each operation.
 - Enforce role permissions in PostgreSQL/RLS and trusted server code, not only route guards.
 - Sensitive punch-in processing must use trusted server time and server-side venue-distance calculation.
-- Validate inputs with schemas; rate-limit or otherwise protect sensitive endpoints where appropriate.
+- Validate all inputs authoritatively in PostgreSQL (constraints, RPC checks); client-side validation is UX only. Protect sensitive endpoints where appropriate.
+- Postgres grants EXECUTE on new functions to PUBLIC: revoke from `public, anon` and grant only to the roles that need it.
+- RLS is row-level, not column-level: keep private fields (e.g. phone) out of rows other members can read.
 - Treat GPS as useful evidence, not proof against spoofing. Do not claim it prevents all cheating.
 - Keep secrets in local environment variables or Supabase project secrets. Commit only `.env.example`.
 - Never mutate production data, link a production Supabase project, deploy, or change billing without explicit approval.

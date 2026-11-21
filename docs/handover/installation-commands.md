@@ -2,18 +2,16 @@
 
 These commands are guidance for the actual project directory. Run only after reviewing/approving the plan. Do not run global installs or modify global Claude Code configuration without approval.
 
-## Required after Phase 1 approval
+## Phase 1 (done 2026-11-21)
+The Vite template was scaffolded into a temporary folder and selected files copied in, because scaffolding into this non-empty directory would overwrite `README.md`. The template already includes TypeScript and oxlint.
 ```bash
-# Create the app only after explicit approval
-npm create vite@latest jhusey-fc -- --template react-ts
-cd jhusey-fc
-npm install
+npm install react-router
+npm install -D tailwindcss @tailwindcss/vite prettier vitest jsdom @testing-library/react @testing-library/jest-dom @testing-library/user-event
+```
 
-# Core libraries (install current versions at implementation time)
-npm install @supabase/supabase-js react-router-dom
-npm install -D typescript eslint prettier vitest @testing-library/react @testing-library/user-event jsdom
-
-# Add styling and additional dependencies only after confirming current Tailwind setup
+## Phase 2
+```bash
+npm install @supabase/supabase-js @tanstack/react-query
 ```
 
 ## Recommended local Supabase CLI

@@ -2,6 +2,15 @@
 
 This is a design proposal, not an executed migration.
 
+## Review notes (2026-11-21) - apply when the relevant phase is planned
+- `profiles.phone`: RLS is row-level, so a phone in a team-readable row is readable by teammates. Drop it or move it to an admin-only table (open question 18).
+- `profiles.role`: members must have no UPDATE grant on it; grant column-level updates only (e.g. `display_name`) if needed.
+- `fines.rule_code` should reference `fine_rules(code)`; store money as whole-rupee `integer`.
+- Merge `attendance_corrections` into a single `audit_log` (actor, action, entity, old/new `jsonb`, reason) written only by admin RPCs. A Late→On Time correction must waive the fine in the same transaction.
+- `location_verified` is redundant while outside-radius punch-ins are rejected; keep only if manual admin attendance is approved (open question 15).
+- `payments.fine_id not null` allows only one fine per payment; see open question 17.
+- Snapshot venue coordinates/radius on attendance, or never edit a venue in place, so stored distances remain explainable.
+
 ## Relationships
 ```text
 auth.users 1---1 profiles

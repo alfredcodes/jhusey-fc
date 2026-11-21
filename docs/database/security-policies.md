@@ -7,6 +7,9 @@
 - Use `to authenticated` / `to anon` deliberately; default to no anonymous access.
 - Never put the Supabase secret/service-role key in frontend code.
 - Treat views as security-sensitive: PostgreSQL views can bypass underlying RLS by default unless configured appropriately (for example `security_invoker = true` on supported versions) or access is otherwise restricted.
+- Team attendance summary: use a `security definer` RPC that returns only display name and status. A `security_invoker` view would apply the member's own-row RLS and return only their own record.
+- `security definer` functions must set `search_path = ''`, use schema-qualified names, `revoke execute ... from public, anon` and grant only to `authenticated`.
+- In policies, write `(select auth.uid())` so it is evaluated once per query, not per row. Use a `security definer` `is_admin()` helper.
 - Use a trusted function with carefully scoped privileges for punch-in and admin-only operations.
 
 ## Access matrix (conceptual)

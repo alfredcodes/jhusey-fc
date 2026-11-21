@@ -6,6 +6,8 @@
 - One admin account initially.
 - No public registration as admin. Admin creation/role assignment is a controlled bootstrap operation.
 - No shared member login.
+- Onboarding (confirmed 2026-11-21): the admin invites each member from the Supabase Dashboard; public sign-ups are disabled. A trigger on `auth.users` creates the `profiles` row with role `member`. Invite and password-reset emails go through custom SMTP (Resend).
+- Admin bootstrap: invite the admin like any member, then set `role = 'admin'` once with SQL in the dashboard. This is not done in a migration, because user IDs differ per environment.
 
 ## Authorization layers
 1. React route protection for navigation and user experience.

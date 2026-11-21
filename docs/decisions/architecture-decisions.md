@@ -17,6 +17,13 @@
 | Admin | One admin account initially | No multi-admin workflows for MVP |
 | Payment | Manual admin confirmation | No payment gateway in MVP |
 | Domain | `jhusey-fc.com` preferred, not purchased/assumed | Free provider subdomain first |
+| Sensitive operations | PostgreSQL RPC, no Edge Functions | One transaction for attendance + fine; one place for business rules (2026-11-21) |
+| Local development DB | Supabase CLI local stack on Docker Desktop | Enables `db reset` and local pgTAP/RLS tests (2026-11-21) |
+| Member onboarding | Admin invites members from Supabase Dashboard; public sign-ups disabled | No custom user-management code; members create their own password via the invite (2026-11-21) |
+| Auth email | Custom SMTP through Resend | Supabase built-in email only reaches project team addresses at a low rate limit (2026-11-21) |
+| Tooling | oxlint (Vite template default), Prettier, Vitest + Testing Library | Phase 1, 2026-11-21 |
+| Server state | TanStack Query from Phase 2 | Avoids hand-rolled fetch/loading/error effects |
+| Team attendance view | `security definer` RPC returning name + status only | A `security_invoker` view would apply own-row RLS and show only the caller |
 
 ## Superseded decision
 An earlier discussion proposed GPS + session PIN. The latest explicit user decision removed the PIN because it adds friction. Do not create PIN tables, PIN fields, PIN screens, PIN attempt limits or PIN-related Edge Functions.
@@ -24,7 +31,7 @@ An earlier discussion proposed GPS + session PIN. The latest explicit user decis
 ## Provisional choices
 - Default geofence radius 100m, subject to on-site testing.
 - Map library Leaflet, only if map view is retained.
-- TanStack Query only if server-state needs justify it.
+- Prefer an OpenStreetMap link over embedding Leaflet for showing a punch-in location.
 - PWA as later enhancement, not a launch blocker.
 
 ## Unresolved
