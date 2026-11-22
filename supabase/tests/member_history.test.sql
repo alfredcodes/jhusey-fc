@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(17);
+select plan(18);
 
 delete from public.audit_log;
 delete from public.fines;
@@ -82,30 +82,30 @@ select ok(
   'a member sees their own GPS evidence in their history');
 
 select results_eq(
-  $$ select display_name, status::text from public.team_attendance('20000000-0000-0000-0000-000000000009') $$,
+  $$ select display_name, result from public.session_roster('20000000-0000-0000-0000-000000000009')
+     where result in ('on_time', 'late') $$,
   $$ values ('Asha', 'on_time'), ('Bikash', 'late') $$,
-  'team view: every member who punched in, with status');
+  'team roster: every member who punched in, with status');
 
-select results_eq(
-  $$ select count(*)::int from public.team_attendance('20000000-0000-0000-0000-000000000007') $$,
-  $$ values (0) $$,
-  'team view lists only members who punched in (no absent list)');
+select ok(
+  (select count(*) > 0 from public.session_roster('20000000-0000-0000-0000-000000000007') where result = 'absent'),
+  'team roster also lists absent members (transparency)');
+
+select ok(
+  (select distance_m is null and accuracy_m is null
+   from public.session_roster('20000000-0000-0000-0000-000000000009') where display_name = 'Bikash'),
+  'the roster hides another member''s distance and accuracy');
+
+select ok(
+  (select distance_m is not null
+   from public.session_roster('20000000-0000-0000-0000-000000000009') where display_name = 'Asha'),
+  'the roster shows the caller''s own distance');
 
 select is(
   (select count(*)::int from public.attendance where member_id = '00000000-0000-0000-0000-0000000000b1'),
-  0, 'the team view does not open up other members'' attendance rows');
+  0, 'the roster does not open up other members'' attendance rows (GPS)');
 
 reset role;
-
--- The team view returns exactly two columns: no coordinates, times or fines.
-select is(
-  (select array_agg(parameter_name::text order by ordinal_position)
-   from information_schema.parameters
-   where specific_name = (select specific_name from information_schema.routines
-                          where routine_schema = 'public' and routine_name = 'team_attendance')
-     and parameter_mode = 'OUT'),
-  array['display_name', 'status'],
-  'team_attendance exposes only display_name and status');
 
 -- ---------------------------------------------------------------------------
 -- Member B sees their own history only
@@ -132,15 +132,15 @@ reset role;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000e1","role":"authenticated"}', true);
 set local role authenticated;
 select throws_ok(
-  $$ select * from public.team_attendance('20000000-0000-0000-0000-000000000009') $$,
-  '42501', 'Your account is not active.', 'an inactive member cannot use the team view');
+  $$ select * from public.session_roster('20000000-0000-0000-0000-000000000009') $$,
+  '42501', 'Your account is not active.', 'an inactive member cannot use the team roster');
 select is((select count(*)::int from public.my_session_history()), 0,
   'an inactive member gets no history (sessions are hidden from them)');
 reset role;
 
 set local role anon;
 select throws_ok($$ select * from public.my_session_history() $$, '42501', null, 'anon cannot read history');
-select throws_ok($$ select * from public.team_attendance('20000000-0000-0000-0000-000000000009') $$,
+select throws_ok($$ select * from public.session_roster('20000000-0000-0000-0000-000000000009') $$,
   '42501', null, 'anon cannot use the team view');
 select throws_ok($$ select public.session_closed(current_date) $$, '42501', null, 'anon cannot call session_closed');
 reset role;

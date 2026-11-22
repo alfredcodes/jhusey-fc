@@ -8,7 +8,7 @@ Jhusey FC is a private futsal team management app for approximately 24 members i
 - React Router 8, declarative mode (`BrowserRouter`/`Routes`); no framework mode or SSR
 - Tailwind CSS v4 via `@tailwindcss/vite` (no `tailwind.config.js`, no PostCSS)
 - Supabase Auth + PostgreSQL + Row Level Security
-- PostgreSQL RPC (`security definer`, `search_path = ''`) for sensitive operations; no Edge Functions unless a concrete need appears
+- PostgreSQL RPC (`security definer`, `search_path = ''`) for sensitive operations. One Edge Function, `admin-users` (create member / reset password), because those need the service-role key; add no others without a concrete need
 - TanStack Query from Phase 2 for server state
 - oxlint, Prettier, Vitest + React Testing Library; Playwright later, for critical flows only
 - Local Supabase via the CLI dev dependency + Docker Desktop
@@ -25,14 +25,14 @@ Read the relevant files under `docs/` before implementing. `docs/decisions/archi
 
 ## Non-negotiable business rules
 - Timezone: `Asia/Kathmandu`; currency: NPR.
-- Fixed attendance cutoff: 7:15:00 PM Nepal time for every session.
-- A server timestamp at or before 19:15:00 is On Time. 19:15:01 or later is Late.
-- Late fine: NPR 50.
+- Attendance cutoff, punch-in window and fine amounts live in `club_settings` and are admin-editable (2026-11-22). Defaults: on time up to 19:15:00 (whole seconds), window 18:30-21:00, late fine NPR 50, absence fine NPR 100. A change applies only to punch-ins/fines created afterwards; stored statuses and amounts never change.
+- Absence fine: a scheduled session after punch-in closes, with no punch-in and no excuse, gets an absence fine (pg_cron job, only for sessions on/after `absence_fines_from`, never retroactive). Members excuse themselves in the app until midnight before the session day; the admin can excuse later with a reason.
+- No paid services: no paid email/SMS/push/maps/APIs. Accounts are created by the admin with an initial password (shown once, never stored by the app); forgotten passwords are reset by the admin.
 - Punch-in uses GPS only. There is no session PIN, QR code, manual code or second verification step.
 - Capture location only when the member taps Punch In. No background or continuous tracking.
 - Store server-generated punch-in time, received coordinates, accuracy, configured venue and server-calculated distance. Do not trust the browser clock or client-calculated attendance status/distance.
 - Members can inspect their own complete punch-in history. Members must not edit attendance, timestamps, GPS, fines or payment records.
-- Members may see team attendance status, but not other members' precise GPS coordinates, private contact details or payment evidence.
+- Team transparency (2026-11-22): active members read the whole team's attendance results, punch-in times, fines, payments (amount, date, method) and reports, read-only. They never see other members' GPS coordinates, distance/accuracy, phone/email, excuse notes, payment notes, the audit log or the Club/Futsal/Rules settings.
 - One admin account initially. No public admin registration. Do not build multi-admin workflows unless explicitly approved.
 - NPR 200 communication-related penalty is unresolved. Do not implement it until its trigger, evidence, deadline and waiver rules are confirmed.
 - Admin corrections must preserve original attendance evidence and record who changed what, when and why.

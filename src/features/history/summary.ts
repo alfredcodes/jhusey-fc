@@ -1,9 +1,9 @@
-/** One session from my_session_history(). Punch-in fields are null on absent/open days. */
+/** One session from my_session_history(). Punch-in fields are null on absent/excused/open days. */
 export type HistoryRow = {
   session_id: string
   session_date: string
   venue_name: string
-  result: 'on_time' | 'late' | 'absent' | 'open'
+  result: 'on_time' | 'late' | 'absent' | 'excused' | 'open'
   /** First result at punch-in; differs from result when the admin corrected it. */
   original_status: 'on_time' | 'late' | null
   source: 'gps' | 'admin' | null
@@ -14,6 +14,7 @@ export type HistoryRow = {
   distance_m: number | null
   fine_npr: number | null
   fine_status: 'pending' | 'paid' | 'waived' | null
+  fine_reason: 'late' | 'absence' | null
 }
 
 export type FineRow = { amount_npr: number; status: 'pending' | 'paid' | 'waived' }
@@ -25,18 +26,21 @@ export type Summary = {
   onTime: number
   late: number
   absent: number
+  excused: number
   /** Whole-number percentage of counted sessions attended, or null before the first one. */
   attendancePercent: number | null
   fines: { outstanding: number; paid: number; waived: number }
 }
 
+/** Same counting as the team report: excused absences still count as sessions. */
 export function summarize(rows: HistoryRow[], fines: FineRow[]): Summary {
   const count = (result: HistoryRow['result']) => rows.filter((row) => row.result === result).length
   const onTime = count('on_time')
   const late = count('late')
   const absent = count('absent')
+  const excused = count('excused')
   const attended = onTime + late
-  const counted = attended + absent
+  const counted = attended + absent + excused
   const sum = (status: FineRow['status']) =>
     fines
       .filter((fine) => fine.status === status)
@@ -48,6 +52,7 @@ export function summarize(rows: HistoryRow[], fines: FineRow[]): Summary {
     onTime,
     late,
     absent,
+    excused,
     attendancePercent: counted === 0 ? null : Math.round((attended / counted) * 100),
     fines: { outstanding: sum('pending'), paid: sum('paid'), waived: sum('waived') },
   }

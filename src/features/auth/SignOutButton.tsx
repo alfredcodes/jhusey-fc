@@ -1,8 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
+import { secondaryButtonClass } from '../../components/form.tsx'
 import { supabase } from '../../lib/supabase.ts'
 
-export default function SignOutButton({ className = '' }: { className?: string }) {
+export default function SignOutButton() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
@@ -14,11 +15,7 @@ export default function SignOutButton({ className = '' }: { className?: string }
   }
 
   return (
-    <button
-      type="button"
-      onClick={signOut}
-      className={`rounded-md border border-current px-3 py-1 text-sm font-medium ${className}`}
-    >
+    <button type="button" onClick={signOut} className={secondaryButtonClass}>
       Sign out
     </button>
   )

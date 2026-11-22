@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { supabase } from '../../lib/supabase.ts'
 import { addDays, nepalToday } from '../../lib/nepal-time.ts'
-import MemberHomePage from '../../pages/MemberHomePage.tsx'
+import DashboardPage from '../../pages/DashboardPage.tsx'
 import { renderWithProviders } from '../../test/render.tsx'
 import { sessionFor, type FakeState } from '../../test/supabase-mock.ts'
 import PunchInCard from './PunchInCard.tsx'
@@ -75,7 +75,7 @@ describe('PunchInCard', () => {
     expect(await screen.findByText('You’re punched in')).toBeInTheDocument()
     expect(screen.getByText('7:17:05 PM')).toBeInTheDocument()
     expect(screen.getByText('Late')).toBeInTheDocument()
-    expect(screen.getByText('NPR 50')).toBeInTheDocument()
+    expect(screen.getByText('Rs. 50')).toBeInTheDocument()
   })
 
   it('explains a blocked location permission and does not call the server', async () => {
@@ -123,7 +123,7 @@ describe('PunchInCard', () => {
   })
 })
 
-describe('MemberHomePage', () => {
+describe('DashboardPage', () => {
   const session = (days: number) => ({
     id: `s${days}`,
     session_date: addDays(nepalToday(), days),
@@ -134,14 +134,14 @@ describe('MemberHomePage', () => {
 
   it('shows the Punch In card on a session day', async () => {
     fake.rows.sessions = [session(0)]
-    renderWithProviders(<MemberHomePage />)
+    renderWithProviders(<DashboardPage />)
     expect(await screen.findByRole('button', { name: 'Punch In' })).toBeInTheDocument()
   })
 
   it('hides it when there is no session today', async () => {
     fake.rows.sessions = [session(2)]
-    renderWithProviders(<MemberHomePage />)
-    expect(await screen.findByText('Next session')).toBeInTheDocument()
+    renderWithProviders(<DashboardPage />)
+    expect(await screen.findByText('Upcoming sessions')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Punch In' })).not.toBeInTheDocument()
   })
 })

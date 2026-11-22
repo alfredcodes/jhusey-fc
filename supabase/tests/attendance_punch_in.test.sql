@@ -188,9 +188,9 @@ select is(
 select is(
   (select count(*)::int from public.attendance where member_id <> '00000000-0000-0000-0000-0000000000a1'),
   0, 'a member cannot read another member''s attendance or GPS');
-select is(
-  (select count(*)::int from public.fines where member_id <> '00000000-0000-0000-0000-0000000000a1'),
-  0, 'a member cannot read another member''s fines');
+select ok(
+  (select count(*)::int from public.fines where member_id <> '00000000-0000-0000-0000-0000000000a1') > 0,
+  'team transparency: a member reads the other members'' fines');
 
 select throws_ok(
   $$ insert into public.attendance (member_id, session_id, venue_id, punched_in_at, status, latitude,

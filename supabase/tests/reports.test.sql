@@ -59,8 +59,11 @@ update public.fines set status = 'waived' where id = '40000000-0000-0000-0000-00
 -- ---------------------------------------------------------------------------
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', true);
 set local role authenticated;
-select throws_ok($$ select * from public.admin_attendance_report(public.nepal_today() - 14, public.nepal_today()) $$,
-  '42501', 'Only the admin can do this.', 'a member cannot run reports');
+-- Team transparency: every active member reads the team report; GPS and payment exports stay admin-only.
+select is(
+  (select count(*)::int from public.team_report(public.nepal_today() - 14, public.nepal_today())),
+  (select count(*)::int from public.profiles where is_active),
+  'a member reads the whole team report');
 select throws_ok($$ select * from public.admin_export_attendance(public.nepal_today() - 14, public.nepal_today()) $$,
   '42501', 'Only the admin can do this.', 'a member cannot export everyone''s GPS');
 select throws_ok($$ select * from public.admin_export_payments(public.nepal_today() - 14, public.nepal_today()) $$,
@@ -80,38 +83,38 @@ set local role authenticated;
 
 select results_eq(
   $$ select display_name, sessions, on_time, late, absent, attendance_percent
-     from public.admin_attendance_report(public.nepal_today() - 14, public.nepal_today())
+     from public.team_report(public.nepal_today() - 14, public.nepal_today())
      where display_name = 'Asha' $$,
   $$ values ('Asha', 3, 1, 1, 1, 67) $$,
   'Asha: 3 sessions (cancelled and out-of-range excluded), 1 on time, 1 late, 1 absent, 67% (late still counts as attended)');
 
 select results_eq(
   $$ select fines_npr, fines_paid_npr, fines_waived_npr, fines_outstanding_npr
-     from public.admin_attendance_report(public.nepal_today() - 14, public.nepal_today())
+     from public.team_report(public.nepal_today() - 14, public.nepal_today())
      where display_name = 'Asha' $$,
   $$ values (50, 50, 0, 0) $$,
   'Asha''s fine is assigned and paid');
 
 select results_eq(
   $$ select fines_npr, fines_paid_npr, fines_waived_npr, fines_outstanding_npr
-     from public.admin_attendance_report(public.nepal_today() - 14, public.nepal_today())
+     from public.team_report(public.nepal_today() - 14, public.nepal_today())
      where member_id = '00000000-0000-0000-0000-0000000000b1' $$,
   $$ values (50, 0, 50, 50) $$,
   'waived fines are reported separately and not counted as assigned');
 
 select is(
-  (select attendance_percent from public.admin_attendance_report(public.nepal_today() - 14, public.nepal_today())
+  (select attendance_percent from public.team_report(public.nepal_today() - 14, public.nepal_today())
    where display_name = 'Admin'),
   0, 'a member with sessions but no punch-ins is at 0%');
 
 select is(
-  (select sessions from public.admin_attendance_report(public.nepal_today() - 60, public.nepal_today() - 40)
+  (select sessions from public.team_report(public.nepal_today() - 60, public.nepal_today() - 40)
    where display_name = 'Asha'),
   0, 'a session before the member joined is not counted');
 
-select throws_ok($$ select * from public.admin_attendance_report(public.nepal_today(), public.nepal_today() - 1) $$,
+select throws_ok($$ select * from public.team_report(public.nepal_today(), public.nepal_today() - 1) $$,
   '22023', 'Choose a valid date range.', 'an inverted range is refused');
-select throws_ok($$ select * from public.admin_attendance_report(public.nepal_today() - 400, public.nepal_today()) $$,
+select throws_ok($$ select * from public.team_report(public.nepal_today() - 400, public.nepal_today()) $$,
   '22023', 'Choose a range of at most one year.', 'ranges are limited to one year');
 
 select results_eq(

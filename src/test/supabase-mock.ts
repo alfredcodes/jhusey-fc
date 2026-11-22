@@ -30,6 +30,8 @@ function fakeQuery(state: FakeState, table: string) {
     eq: () => builder,
     gte: () => builder,
     lte: () => builder,
+    in: () => builder,
+    neq: () => builder,
     order: () => builder,
     limit: () => builder,
     insert: () => builder,
@@ -60,6 +62,8 @@ export function buildFakeSupabase(state: FakeState) {
       updateUser: vi.fn(),
     },
     from: vi.fn((table: string) => fakeQuery(state, table)),
+    // Edge Functions: tests override with mockResolvedValue.
+    functions: { invoke: vi.fn(async () => ({ data: null, error: null })) },
     // Default: return state.rows['rpc:<name>'] (or []). Tests can override per call.
     rpc: vi.fn(async (name: string) => ({ data: state.rows[`rpc:${name}`] ?? [], error: null })),
   }

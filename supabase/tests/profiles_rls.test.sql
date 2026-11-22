@@ -81,10 +81,10 @@ reset role;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', true);
 set local role authenticated;
 
-select results_eq(
-  $$ select id from public.profiles $$,
-  $$ values ('00000000-0000-0000-0000-0000000000a1'::uuid) $$,
-  'a member sees only their own profile');
+-- Team transparency (2026-11-22): active members read every profile (no private fields live there).
+select is(
+  (select count(*)::int from public.profiles), 3,
+  'an active member sees the whole team''s profiles');
 
 select is(public.is_admin(), false, 'is_admin() is false for a member');
 

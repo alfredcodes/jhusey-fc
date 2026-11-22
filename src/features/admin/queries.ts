@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { FunctionsHttpError } from '@supabase/supabase-js'
+import { UserFacingError } from '../../lib/errors.ts'
 import { supabase } from '../../lib/supabase.ts'
 
-// Every admin write is a database function that checks the admin role, applies the
-// business rule and writes the audit log in one transaction. These hooks only call them.
+// Every admin write is a database function (or the admin-users Edge Function) that checks
+// the admin role, applies the business rule and writes the audit log. These hooks only call them.
 
 /** After any admin change, refetch everything that could show it. Cheap for 24 members. */
 function useRefreshAll() {
@@ -17,76 +19,103 @@ async function rpc<T>(call: PromiseLike<{ data: T; error: unknown }>): Promise<T
 }
 
 // ---------------------------------------------------------------------------
-// Members
+// Members and accounts
 // ---------------------------------------------------------------------------
-export function useAllMembers() {
-  return useQuery({
-    queryKey: ['profiles', 'all'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, display_name, role, is_active, created_at')
-        .order('is_active', { ascending: false })
-        .order('display_name')
-      if (error) throw error
-      return data
-    },
-  })
-}
-
 export function useUpdateMember() {
   const refresh = useRefreshAll()
   return useMutation({
-    mutationFn: (input: { id: string; displayName: string; isActive: boolean }) =>
-      rpc(
+    mutationFn: async (input: {
+      id: string
+      displayName: string
+      isActive: boolean
+      phone?: string | null
+    }) => {
+      await rpc(
         supabase.rpc('admin_update_member', {
           p_member_id: input.id,
           p_display_name: input.displayName,
           p_is_active: input.isActive,
         }),
-      ),
+      )
+      if (input.phone !== undefined) {
+        await rpc(
+          supabase.rpc('admin_set_member_phone', {
+            p_member_id: input.id,
+            p_phone: input.phone ?? '',
+          }),
+        )
+      }
+    },
     onSuccess: refresh,
   })
 }
 
-// ---------------------------------------------------------------------------
-// Attendance for one session (every active member, with or without a record)
-// ---------------------------------------------------------------------------
-export function useSessionRoster(sessionId: string | undefined) {
+/** Login emails, phones and sign-in status. Admin only (the database refuses others). */
+export function useMemberAccounts(enabled: boolean) {
   return useQuery({
-    queryKey: ['attendance', 'roster', sessionId],
-    enabled: sessionId !== undefined,
+    queryKey: ['accounts'],
+    enabled,
     queryFn: async () => {
-      const [members, records] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('id, display_name')
-          .eq('is_active', true)
-          .order('display_name'),
-        supabase
-          .from('attendance')
-          .select(
-            'id, member_id, punched_in_at, status, original_status, source, manual_reason, distance_m, accuracy_m, fine:fines(id, amount_npr, status)',
-          )
-          .eq('session_id', sessionId!),
-      ])
-      if (members.error) throw members.error
-      if (records.error) throw records.error
-      const byMember = new Map(records.data.map((record) => [record.member_id, record]))
-      // Inactive members still appear if they have a record for this session.
-      const inactiveWithRecords = records.data
-        .filter((record) => !members.data.some((member) => member.id === record.member_id))
-        .map((record) => ({ id: record.member_id, display_name: '(inactive member)' }))
-      return [...members.data, ...inactiveWithRecords].map((member) => ({
-        member,
-        record: byMember.get(member.id) ?? null,
-      }))
+      const { data, error } = await supabase.rpc('admin_member_accounts')
+      if (error) throw error
+      return data ?? []
     },
   })
 }
 
-export type RosterEntry = NonNullable<ReturnType<typeof useSessionRoster>['data']>[number]
+export type MemberAccount = NonNullable<ReturnType<typeof useMemberAccounts>['data']>[number]
 
+/** Errors from the Edge Function carry a member-friendly `error` field. */
+async function invokeAdminUsers(body: Record<string, unknown>) {
+  const { data, error } = await supabase.functions.invoke('admin-users', { body })
+  if (error) {
+    if (error instanceof FunctionsHttpError) {
+      const payload = await error.context.json().catch(() => null)
+      throw new UserFacingError(payload?.error ?? 'The request failed. Try again.')
+    }
+    throw new UserFacingError('Could not reach the server. Check your connection and try again.')
+  }
+  return data as { member_id: string; email?: string }
+}
+
+export function useCreateMember() {
+  const refresh = useRefreshAll()
+  return useMutation({
+    mutationFn: (input: { displayName: string; email: string; phone: string; password: string }) =>
+      invokeAdminUsers({
+        action: 'create',
+        display_name: input.displayName,
+        email: input.email,
+        phone: input.phone,
+        password: input.password,
+      }),
+    onSuccess: refresh,
+  })
+}
+
+export function useResetPassword() {
+  const refresh = useRefreshAll()
+  return useMutation({
+    mutationFn: (input: { memberId: string; password: string }) =>
+      invokeAdminUsers({
+        action: 'reset_password',
+        member_id: input.memberId,
+        password: input.password,
+      }),
+    onSuccess: refresh,
+  })
+}
+
+/** A readable random password for the admin to share once (no look-alike characters). */
+export function generatePassword(length = 12) {
+  const alphabet = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  const values = crypto.getRandomValues(new Uint32Array(length))
+  return Array.from(values, (value) => alphabet[value % alphabet.length]).join('')
+}
+
+// ---------------------------------------------------------------------------
+// Attendance
+// ---------------------------------------------------------------------------
 export function useCorrectAttendance() {
   const refresh = useRefreshAll()
   return useMutation({
@@ -126,25 +155,6 @@ export function useRecordAttendance() {
 // ---------------------------------------------------------------------------
 // Fines and payments
 // ---------------------------------------------------------------------------
-export function usePendingFines() {
-  return useQuery({
-    queryKey: ['fines', 'pending'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('fines')
-        .select(
-          'id, member_id, amount_npr, reason, created_at, member:profiles(display_name), attendance(session:sessions(session_date))',
-        )
-        .eq('status', 'pending')
-        .order('created_at')
-      if (error) throw error
-      return data
-    },
-  })
-}
-
-export type PendingFine = NonNullable<ReturnType<typeof usePendingFines>['data']>[number]
-
 export function useWaiveFine() {
   const refresh = useRefreshAll()
   return useMutation({
@@ -160,6 +170,10 @@ export const PAYMENT_METHODS = [
   { value: 'wallet', label: 'Wallet (eSewa, Khalti…)' },
   { value: 'other', label: 'Other' },
 ] as const
+
+export function methodLabel(value: string) {
+  return PAYMENT_METHODS.find((method) => method.value === value)?.label ?? value
+}
 
 export function useRecordPayment() {
   const refresh = useRefreshAll()
@@ -177,19 +191,19 @@ export function useRecordPayment() {
   })
 }
 
-export function useRecentPayments() {
+/** Payment notes and void reasons: admin only (members get amounts via team_payments). */
+export function usePaymentNotes(enabled: boolean) {
   return useQuery({
-    queryKey: ['payments', 'recent'],
+    queryKey: ['payments', 'notes'],
+    enabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('payments')
-        .select(
-          'id, amount_npr, method, note, created_at, voided_at, void_reason, member:profiles!payments_member_id_fkey(display_name)',
-        )
+        .select('id, note, void_reason, voided_at')
         .order('created_at', { ascending: false })
-        .limit(30)
+        .limit(500)
       if (error) throw error
-      return data
+      return new Map(data.map((row) => [row.id, row]))
     },
   })
 }
@@ -219,7 +233,7 @@ export function useAuditLog() {
         .from('audit_log')
         .select('id, action, reason, details, created_at, actor:profiles(display_name)')
         .order('created_at', { ascending: false })
-        .limit(100)
+        .limit(200)
       if (error) throw error
       return data
     },

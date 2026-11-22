@@ -18,15 +18,19 @@ Never put `SECRET_KEY` or `SERVICE_ROLE_KEY` in `.env.local` or any `VITE_` vari
 | Supabase Studio (local dashboard) | http://127.0.0.1:54323 |
 | Mailpit (catches every local email) | http://127.0.0.1:54324 |
 
-## Inviting a member (local)
-1. Studio → Authentication → Users → Add user → Send invitation.
-2. Open Mailpit and click the invite link. It opens `/set-password?token_hash=…&type=invite`.
-3. Choose a password. The member is signed in and lands on the dashboard.
+## Adding a member (local)
+The admin opens **Members → Add member**, enters name, email, optional phone and an initial password
+(or **Generate**), and shares the login shown once. The member must choose a new password at first
+sign-in. Forgotten password: **Members → Reset password** sets a temporary one. No email is sent.
 
-Public sign-up is disabled (`enable_signup = false`), so invitation is the only way in.
+This uses the Edge Function `supabase/functions/admin-users`. `npm run db:start` starts it (edge
+runtime enabled in `config.toml`); if it is not running, use `npx supabase functions serve`.
+
+Public sign-up is disabled (`enable_signup = false`).
 
 ## Bootstrapping the single admin
-Invite the admin like any member, then run once in Studio → SQL Editor:
+Create the first user in Studio → Authentication → Users → Add user (email + password, auto-confirm),
+then run once in Studio → SQL Editor:
 ```sql
 update public.profiles set role = 'admin'
 where id = (select id from auth.users where email = 'ADMIN_EMAIL_HERE');
@@ -45,9 +49,9 @@ New migration: `npx supabase migration new <name>`. Never edit a migration that 
 
 ## Hosted project checklist (Phase 7, after approval)
 - Authentication → Sign In / Providers: disable "Allow new users to sign up".
-- Authentication → URL Configuration: Site URL = the Pages URL; add `<site>/set-password` to the redirect URLs.
-- Authentication → Emails: paste `supabase/templates/invite.html` and `recovery.html` with the same subjects as `config.toml`.
-- Authentication → Emails → SMTP: Resend (`smtp.resend.com`, port 465, user `resend`, password = Resend API key).
-  **Resend needs a verified domain you own to email anyone other than your own Resend account address.** See open question 19.
+- Authentication → URL Configuration: Site URL = the Pages URL.
+- No email/SMTP setup: the app sends no email (zero-cost decision, 2026-11-22).
+- Deploy the Edge Function: `npx supabase functions deploy admin-users --no-verify-jwt` (it checks the admin itself). The service-role key is provided by Supabase automatically; never put it in Pages variables.
+- pg_cron is enabled by the migration (absence fines every 15 minutes); check Integrations → Cron after `db push`.
 - Minimum password length 8. Enable TOTP MFA for the admin.
 - Apply migrations with `supabase db push` only after explicit approval. It is denied in `.claude/settings.json` until then.

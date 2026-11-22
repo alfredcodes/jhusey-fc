@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router'
 import StatusScreen from '../../components/StatusScreen.tsx'
 import { useAuth } from './auth-context.ts'
 import SignOutButton from './SignOutButton.tsx'
+import { useMyPrivate } from './use-private.ts'
 import { useProfile } from './use-profile.ts'
 
 /**
@@ -11,13 +12,14 @@ import { useProfile } from './use-profile.ts'
 export default function RequireAuth() {
   const { session, loading } = useAuth()
   const profile = useProfile()
+  const mine = useMyPrivate()
   const location = useLocation()
 
   if (loading) return <StatusScreen title="Loading…" />
 
   if (!session) return <Navigate to="/login" replace state={{ from: location.pathname }} />
 
-  if (profile.isPending) return <StatusScreen title="Loading your profile…" />
+  if (profile.isPending || mine.isPending) return <StatusScreen title="Loading your profile…" />
 
   if (profile.isError) {
     return (
@@ -39,6 +41,11 @@ export default function RequireAuth() {
         <SignOutButton />
       </StatusScreen>
     )
+  }
+
+  // A password set by the admin (new account or reset) must be replaced first.
+  if (mine.data?.must_change_password && location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" replace />
   }
 
   return <Outlet />

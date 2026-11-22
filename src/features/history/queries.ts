@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query'
-import { nepalToday } from '../../lib/nepal-time.ts'
 import { supabase } from '../../lib/supabase.ts'
 import { useAuth } from '../auth/auth-context.ts'
 import { attendanceKey } from '../attendance/queries.ts'
@@ -30,36 +29,6 @@ export function useMyFines() {
         .from('fines')
         .select('amount_npr, status')
         .eq('member_id', userId!)
-      if (error) throw error
-      return data
-    },
-  })
-}
-
-/** Recent scheduled sessions up to today, newest first, for the team view picker. */
-export function useRecentSessions() {
-  return useQuery({
-    queryKey: ['sessions', 'recent'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sessions')
-        .select('id, session_date')
-        .eq('status', 'scheduled')
-        .lte('session_date', nepalToday())
-        .order('session_date', { ascending: false })
-        .limit(12)
-      if (error) throw error
-      return data
-    },
-  })
-}
-
-export function useTeamAttendance(sessionId: string | undefined) {
-  return useQuery({
-    queryKey: [...attendanceKey, 'team', sessionId],
-    enabled: sessionId !== undefined,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('team_attendance', { p_session_id: sessionId! })
       if (error) throw error
       return data
     },

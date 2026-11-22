@@ -1,52 +1,26 @@
-import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import AuthCard from '../../components/AuthCard.tsx'
-import { FormError, inputClass, primaryButtonClass } from '../../components/form.tsx'
-import { supabase } from '../../lib/supabase.ts'
+import { Icon } from '../../components/icons.tsx'
 
+/**
+ * No email is sent (the club pays for nothing). The admin sets a temporary password
+ * from the Members page and shares it with the member, who then picks a new one.
+ */
 export default function ForgotPasswordPage() {
-  const [sent, setSent] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const email = String(new FormData(event.currentTarget).get('email')).trim()
-    setSubmitting(true)
-    setError(null)
-
-    // The recovery email template builds the /set-password link itself.
-    const { error } = await supabase.auth.resetPasswordForEmail(email)
-
-    setSubmitting(false)
-    if (error && error.status === 429) {
-      setError('Too many requests. Please wait a few minutes and try again.')
-      return
-    }
-    // Shown whether or not the email exists, so the form cannot be used to discover accounts.
-    setSent(true)
-  }
-
   return (
-    <AuthCard title="Reset your password">
-      {sent ? (
-        <p role="status" className="rounded-md bg-emerald-50 px-3 py-2 text-emerald-900">
-          If an account exists for that email, a reset link is on its way. Check your inbox.
+    <AuthCard title="Forgot your password?">
+      <div className="space-y-4 text-sm text-gray-600">
+        <p className="flex gap-3 rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+          <Icon name="info" className="h-5 w-5 shrink-0 text-blue-600" />
+          <span>
+            Ask the team admin. They will give you a temporary password, and you will choose a new
+            one the next time you sign in.
+          </span>
         </p>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <label className="block text-sm font-medium">
-            Email
-            <input name="email" type="email" autoComplete="email" required className={inputClass} />
-          </label>
-          <FormError message={error} />
-          <button type="submit" disabled={submitting} className={primaryButtonClass}>
-            {submitting ? 'Sending…' : 'Send reset link'}
-          </button>
-        </form>
-      )}
+        <p>The app never sends passwords by email or SMS.</p>
+      </div>
       <p className="mt-6 text-sm">
-        <Link to="/login" className="font-medium text-emerald-800 underline">
+        <Link to="/login" className="font-semibold text-blue-600 hover:underline">
           Back to sign in
         </Link>
       </p>

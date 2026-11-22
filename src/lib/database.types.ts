@@ -23,6 +23,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      absence_excuses: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          member_id: string
+          note: string | null
+          session_id: string
+          source: Database['public']['Enums']['excuse_source']
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          member_id: string
+          note?: string | null
+          session_id: string
+          source: Database['public']['Enums']['excuse_source']
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          member_id?: string
+          note?: string | null
+          session_id?: string
+          source?: Database['public']['Enums']['excuse_source']
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'absence_excuses_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'absence_excuses_member_id_fkey'
+            columns: ['member_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'absence_excuses_session_id_fkey'
+            columns: ['session_id']
+            isOneToOne: false
+            referencedRelation: 'sessions'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       attendance: {
         Row: {
           accuracy_m: number | null
@@ -161,6 +214,54 @@ export type Database = {
           },
         ]
       }
+      club_settings: {
+        Row: {
+          absence_fine_npr: number
+          absence_fines_from: string
+          club_name: string
+          id: boolean
+          late_fine_npr: number
+          on_time_cutoff: string
+          punch_close: string
+          punch_open: string
+          updated_at: string
+          updated_by: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          absence_fine_npr?: number
+          absence_fines_from?: string
+          club_name?: string
+          id?: boolean
+          late_fine_npr?: number
+          on_time_cutoff?: string
+          punch_close?: string
+          punch_open?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          absence_fine_npr?: number
+          absence_fines_from?: string
+          club_name?: string
+          id?: boolean
+          late_fine_npr?: number
+          on_time_cutoff?: string
+          punch_close?: string
+          punch_open?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'club_settings_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       fines: {
         Row: {
           amount_npr: number
@@ -170,6 +271,7 @@ export type Database = {
           member_id: string
           payment_id: string | null
           reason: string
+          session_id: string
           status: Database['public']['Enums']['fine_status']
           updated_at: string
         }
@@ -182,6 +284,7 @@ export type Database = {
           member_id: string
           payment_id?: string | null
           reason: string
+          session_id: string
           status?: Database['public']['Enums']['fine_status']
           updated_at?: string
         }
@@ -193,6 +296,7 @@ export type Database = {
           member_id?: string
           payment_id?: string | null
           reason?: string
+          session_id?: string
           status?: Database['public']['Enums']['fine_status']
           updated_at?: string
         }
@@ -216,6 +320,43 @@ export type Database = {
             columns: ['payment_id']
             isOneToOne: false
             referencedRelation: 'payments'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fines_session_id_fkey'
+            columns: ['session_id']
+            isOneToOne: false
+            referencedRelation: 'sessions'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      member_private: {
+        Row: {
+          member_id: string
+          must_change_password: boolean
+          phone: string | null
+          updated_at: string
+        }
+        ComputedFields: never
+        Insert: {
+          member_id: string
+          must_change_password?: boolean
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          member_id?: string
+          must_change_password?: boolean
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'member_private_member_id_fkey'
+            columns: ['member_id']
+            isOneToOne: true
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
         ]
@@ -391,6 +532,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _create_absence_fines: { Args: { p_now: string }; Returns: number }
       _punch_in: {
         Args: {
           p_accuracy_m: number
@@ -400,23 +542,6 @@ export type Database = {
           p_now: string
         }
         Returns: Json
-      }
-      admin_attendance_report: {
-        Args: { p_from: string; p_to: string }
-        Returns: {
-          absent: number
-          attendance_percent: number
-          display_name: string
-          fines_npr: number
-          fines_outstanding_npr: number
-          fines_paid_npr: number
-          fines_waived_npr: number
-          is_active: boolean
-          late: number
-          member_id: string
-          on_time: number
-          sessions: number
-        }[]
       }
       admin_correct_attendance: {
         Args: {
@@ -429,6 +554,10 @@ export type Database = {
       admin_create_sessions: {
         Args: { p_from: string; p_to: string; p_venue_id: string; p_weekdays: number[] }
         Returns: number
+      }
+      admin_excuse_absence: {
+        Args: { p_member_id: string; p_reason: string; p_session_id: string }
+        Returns: undefined
       }
       admin_export_attendance: {
         Args: { p_from: string; p_to: string }
@@ -473,6 +602,16 @@ export type Database = {
           voided_nepal: string
         }[]
       }
+      admin_member_accounts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          email: string
+          last_sign_in_at: string
+          member_id: string
+          must_change_password: boolean
+          phone: string
+        }[]
+      }
       admin_record_attendance: {
         Args: { p_arrived_at: string; p_member_id: string; p_reason: string; p_session_id: string }
         Returns: Database['public']['Enums']['attendance_status']
@@ -481,16 +620,34 @@ export type Database = {
         Args: { p_fine_ids: string[]; p_member_id: string; p_method: string; p_note: string }
         Returns: string
       }
+      admin_set_member_phone: { Args: { p_member_id: string; p_phone: string }; Returns: undefined }
       admin_update_member: {
         Args: { p_display_name: string; p_is_active: boolean; p_member_id: string }
         Returns: undefined
       }
+      admin_update_rules: {
+        Args: {
+          p_absence_fine_npr: number
+          p_absence_fines_from: string
+          p_club_name: string
+          p_late_fine_npr: number
+          p_on_time_cutoff: string
+          p_punch_close: string
+          p_punch_open: string
+        }
+        Returns: undefined
+      }
       admin_void_payment: { Args: { p_payment_id: string; p_reason: string }; Returns: undefined }
       admin_waive_fine: { Args: { p_fine_id: string; p_reason: string }; Returns: undefined }
-      attendance_status_for: {
-        Args: { p_at: string; p_session_date: string }
-        Returns: Database['public']['Enums']['attendance_status']
-      }
+      attendance_status_for:
+        | {
+            Args: { p_at: string; p_session_date: string }
+            Returns: Database['public']['Enums']['attendance_status']
+          }
+        | {
+            Args: { p_at: string; p_cutoff: string; p_session_date: string }
+            Returns: Database['public']['Enums']['attendance_status']
+          }
       check_report_range: { Args: { p_from: string; p_to: string }; Returns: undefined }
       distance_m: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
@@ -498,12 +655,14 @@ export type Database = {
       }
       is_active_member: { Args: Record<PropertyKey, never>; Returns: boolean }
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
+      mark_password_changed: { Args: Record<PropertyKey, never>; Returns: undefined }
       my_session_history: {
         Args: Record<PropertyKey, never>
         Returns: {
           accuracy_m: number
           distance_m: number
           fine_npr: number
+          fine_reason: string
           fine_status: Database['public']['Enums']['fine_status']
           latitude: number
           longitude: number
@@ -517,6 +676,7 @@ export type Database = {
         }[]
       }
       nepal_today: { Args: Record<PropertyKey, never>; Returns: string }
+      notify_absence: { Args: { p_note: string; p_session_id: string }; Returns: undefined }
       punch_in: {
         Args: { p_accuracy_m: number; p_latitude: number; p_longitude: number }
         Returns: Json
@@ -524,13 +684,100 @@ export type Database = {
       require_admin: { Args: Record<PropertyKey, never>; Returns: undefined }
       require_reason: { Args: { p_reason: string }; Returns: string }
       session_closed: { Args: { p_session_date: string }; Returns: boolean }
-      team_attendance: {
+      session_fine: {
+        Args: { p_member_id: string; p_session_id: string }
+        Returns: {
+          amount_npr: number
+          attendance_id: string | null
+          created_at: string
+          id: string
+          member_id: string
+          payment_id: string | null
+          reason: string
+          session_id: string
+          status: Database['public']['Enums']['fine_status']
+          updated_at: string
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'fines'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      session_roster: {
         Args: { p_session_id: string }
         Returns: {
+          accuracy_m: number
+          attendance_id: string
           display_name: string
-          status: Database['public']['Enums']['attendance_status']
+          distance_m: number
+          excuse_note: string
+          excuse_source: Database['public']['Enums']['excuse_source']
+          fine_amount_npr: number
+          fine_id: string
+          fine_reason: string
+          fine_status: Database['public']['Enums']['fine_status']
+          is_active: boolean
+          member_id: string
+          original_status: Database['public']['Enums']['attendance_status']
+          punched_in_at: string
+          result: string
+          source: Database['public']['Enums']['attendance_source']
         }[]
       }
+      team_monthly_summary: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          absence_fines_npr: number
+          absent: number
+          attended: number
+          collected_npr: number
+          excused: number
+          fines_npr: number
+          late: number
+          late_fines_npr: number
+          member_sessions: number
+          month: string
+          sessions: number
+        }[]
+      }
+      team_payments: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          amount_npr: number
+          created_at: string
+          display_name: string
+          fines_count: number
+          member_id: string
+          method: string
+          payment_id: string
+          voided: boolean
+        }[]
+      }
+      team_report: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          absence_fines_npr: number
+          absent: number
+          attendance_percent: number
+          display_name: string
+          excused: number
+          fines_npr: number
+          fines_outstanding_npr: number
+          fines_paid_npr: number
+          fines_waived_npr: number
+          is_active: boolean
+          late: number
+          late_fines_npr: number
+          member_id: string
+          on_time: number
+          sessions: number
+        }[]
+      }
+      time_label: { Args: { p_time: string }; Returns: string }
+      update_my_phone: { Args: { p_phone: string }; Returns: undefined }
+      withdraw_absence: { Args: { p_session_id: string }; Returns: undefined }
       write_audit: {
         Args: {
           p_action: string
@@ -546,6 +793,7 @@ export type Database = {
       app_role: 'admin' | 'member'
       attendance_source: 'gps' | 'admin'
       attendance_status: 'on_time' | 'late'
+      excuse_source: 'member' | 'admin'
       fine_status: 'pending' | 'paid' | 'waived'
       session_status: 'scheduled' | 'cancelled'
     }
@@ -665,6 +913,7 @@ export const Constants = {
       app_role: ['admin', 'member'],
       attendance_source: ['gps', 'admin'],
       attendance_status: ['on_time', 'late'],
+      excuse_source: ['member', 'admin'],
       fine_status: ['pending', 'paid', 'waived'],
       session_status: ['scheduled', 'cancelled'],
     },

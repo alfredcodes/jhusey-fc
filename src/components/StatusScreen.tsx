@@ -12,12 +12,14 @@ export default function StatusScreen({
 }) {
   return (
     <main
-      className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-3 px-4"
+      className="flex min-h-dvh items-center justify-center bg-[#F9FAFB] px-4"
       aria-live="polite"
     >
-      <h1 className="text-xl font-semibold">{title}</h1>
-      {message && <p className="text-slate-600">{message}</p>}
-      {children && <div>{children}</div>}
+      <div className="w-full max-w-sm space-y-3 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h1 className="text-lg font-bold text-gray-900">{title}</h1>
+        {message && <p className="text-sm text-gray-500">{message}</p>}
+        {children && <div>{children}</div>}
+      </div>
     </main>
   )
 }

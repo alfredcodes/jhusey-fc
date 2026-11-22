@@ -1,50 +1,48 @@
-import { Route, Routes } from 'react-router'
+import { Navigate, Route, Routes } from 'react-router'
+import AuditPage from './features/admin/AuditPage.tsx'
+import AttendancePage from './features/attendance/AttendancePage.tsx'
+import ChangePasswordPage from './features/auth/ChangePasswordPage.tsx'
 import ForgotPasswordPage from './features/auth/ForgotPasswordPage.tsx'
 import LoginPage from './features/auth/LoginPage.tsx'
 import RequireAdmin from './features/auth/RequireAdmin.tsx'
 import RequireAuth from './features/auth/RequireAuth.tsx'
-import SetPasswordPage from './features/auth/SetPasswordPage.tsx'
-import AdminAttendancePage from './features/admin/AdminAttendancePage.tsx'
-import AdminAuditPage from './features/admin/AdminAuditPage.tsx'
-import AdminFinesPage from './features/admin/AdminFinesPage.tsx'
-import AdminMembersPage from './features/admin/AdminMembersPage.tsx'
-import AdminReportsPage from './features/admin/AdminReportsPage.tsx'
+import FinesPage from './features/fines/FinesPage.tsx'
 import HistoryPage from './features/history/HistoryPage.tsx'
-import TeamPage from './features/history/TeamPage.tsx'
-import AdminSessionsPage from './features/sessions/AdminSessionsPage.tsx'
-import AdminVenuesPage from './features/sessions/AdminVenuesPage.tsx'
-import AdminLayout from './layouts/AdminLayout.tsx'
-import MemberLayout from './layouts/MemberLayout.tsx'
-import AdminHomePage from './pages/AdminHomePage.tsx'
-import MemberHomePage from './pages/MemberHomePage.tsx'
+import MembersPage from './features/members/MembersPage.tsx'
+import PaymentsPage from './features/payments/PaymentsPage.tsx'
+import ReportsPage from './features/reports/ReportsPage.tsx'
+import SessionsPage from './features/sessions/SessionsPage.tsx'
+import SettingsPage from './features/settings/SettingsPage.tsx'
+import AppLayout from './layouts/AppLayout.tsx'
+import DashboardPage from './pages/DashboardPage.tsx'
 import NotFoundPage from './pages/NotFoundPage.tsx'
 
-// Route guards are UX only. PostgreSQL RLS is the real authorization boundary.
+// Members and the admin share the same screens; admin controls are hidden for members.
+// Route guards are UX only. PostgreSQL RLS and the RPC checks are the real boundary.
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/set-password" element={<SetPasswordPage />} />
 
       <Route element={<RequireAuth />}>
-        <Route element={<MemberLayout />}>
-          <Route index element={<MemberHomePage />} />
+        <Route path="/change-password" element={<ChangePasswordPage />} />
+        <Route element={<AppLayout />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="attendance" element={<AttendancePage />} />
+          <Route path="sessions" element={<SessionsPage />} />
+          <Route path="fines" element={<FinesPage />} />
+          <Route path="payments" element={<PaymentsPage />} />
+          <Route path="members" element={<MembersPage />} />
+          <Route path="reports" element={<ReportsPage />} />
           <Route path="history" element={<HistoryPage />} />
-          <Route path="team" element={<TeamPage />} />
-        </Route>
-
-        <Route element={<RequireAdmin />}>
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminHomePage />} />
-            <Route path="attendance" element={<AdminAttendancePage />} />
-            <Route path="fines" element={<AdminFinesPage />} />
-            <Route path="members" element={<AdminMembersPage />} />
-            <Route path="reports" element={<AdminReportsPage />} />
-            <Route path="audit" element={<AdminAuditPage />} />
-            <Route path="sessions" element={<AdminSessionsPage />} />
-            <Route path="venues" element={<AdminVenuesPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route element={<RequireAdmin />}>
+            <Route path="audit" element={<AuditPage />} />
           </Route>
+          {/* Old admin links from before the redesign. */}
+          <Route path="admin/*" element={<Navigate to="/" replace />} />
+          <Route path="team" element={<Navigate to="/attendance" replace />} />
         </Route>
       </Route>
 

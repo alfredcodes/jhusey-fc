@@ -16,6 +16,7 @@ function row(result: HistoryRow['result']): HistoryRow {
     distance_m: null,
     fine_npr: null,
     fine_status: null,
+    fine_reason: null,
   }
 }
 
@@ -27,6 +28,12 @@ describe('summarize', () => {
     )
     expect(summary).toMatchObject({ counted: 4, attended: 3, onTime: 2, late: 1, absent: 1 })
     expect(summary.attendancePercent).toBe(75)
+  })
+
+  it('counts an excused absence as a session but not as an absence', () => {
+    const summary = summarize([row('on_time'), row('excused')], [])
+    expect(summary).toMatchObject({ counted: 2, attended: 1, absent: 0, excused: 1 })
+    expect(summary.attendancePercent).toBe(50)
   })
 
   it('does not count today’s open session yet', () => {
