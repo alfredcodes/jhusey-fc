@@ -4,6 +4,8 @@ import LoginPage from './features/auth/LoginPage.tsx'
 import RequireAdmin from './features/auth/RequireAdmin.tsx'
 import RequireAuth from './features/auth/RequireAuth.tsx'
 import SetPasswordPage from './features/auth/SetPasswordPage.tsx'
+import HistoryPage from './features/history/HistoryPage.tsx'
+import TeamPage from './features/history/TeamPage.tsx'
 import AdminSessionsPage from './features/sessions/AdminSessionsPage.tsx'
 import AdminVenuesPage from './features/sessions/AdminVenuesPage.tsx'
 import AdminLayout from './layouts/AdminLayout.tsx'
@@ -23,6 +25,8 @@ export default function App() {
       <Route element={<RequireAuth />}>
         <Route element={<MemberLayout />}>
           <Route index element={<MemberHomePage />} />
+          <Route path="history" element={<HistoryPage />} />
+          <Route path="team" element={<TeamPage />} />
         </Route>
 
         <Route element={<RequireAdmin />}>

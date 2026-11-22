@@ -1,0 +1,147 @@
+-- Member history, derived absences and the team view.
+begin;
+create extension if not exists pgtap with schema extensions;
+set search_path = public, extensions;
+
+select plan(17);
+
+delete from public.fines;
+delete from public.attendance;
+delete from public.sessions;
+delete from public.venues;
+delete from auth.users;
+
+-- ---------------------------------------------------------------------------
+-- Fixtures (relative to the real Nepal date, so "closed" uses the real clock)
+-- ---------------------------------------------------------------------------
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-0000-0000-0000000000a1', 'a@test.local', '{"display_name":"Asha"}'),
+  ('00000000-0000-0000-0000-0000000000b1', 'b@test.local', '{"display_name":"Bikash"}'),
+  ('00000000-0000-0000-0000-0000000000e1', 'e@test.local', '{"display_name":"Inactive"}');
+-- Both members joined 10 days ago.
+update public.profiles set created_at = now() - interval '10 days';
+update public.profiles set is_active = false where id = '00000000-0000-0000-0000-0000000000e1';
+
+insert into public.venues (id, name, latitude, longitude) values
+  ('10000000-0000-0000-0000-000000000001', 'Dhanyentari Futsal', 27.7198624, 85.3407743);
+
+insert into public.sessions (id, session_date, venue_id, status) values
+  ('20000000-0000-0000-0000-000000000012', public.nepal_today() - 12, '10000000-0000-0000-0000-000000000001', 'scheduled'), -- before joining
+  ('20000000-0000-0000-0000-000000000009', public.nepal_today() - 9,  '10000000-0000-0000-0000-000000000001', 'scheduled'), -- A on time, B late
+  ('20000000-0000-0000-0000-000000000008', public.nepal_today() - 8,  '10000000-0000-0000-0000-000000000001', 'scheduled'), -- A late + fine
+  ('20000000-0000-0000-0000-000000000007', public.nepal_today() - 7,  '10000000-0000-0000-0000-000000000001', 'scheduled'), -- A absent
+  ('20000000-0000-0000-0000-000000000006', public.nepal_today() - 6,  '10000000-0000-0000-0000-000000000001', 'cancelled'), -- not counted
+  ('20000000-0000-0000-0000-000000000099', public.nepal_today() + 1,  '10000000-0000-0000-0000-000000000001', 'scheduled'); -- future
+
+-- Attendance written directly by the owner (punch_in() is tested elsewhere).
+create function pg_temp.att(p_member uuid, p_session uuid, p_status public.attendance_status) returns uuid
+language sql as $$
+  insert into public.attendance (member_id, session_id, venue_id, punched_in_at, status, latitude, longitude,
+    accuracy_m, distance_m, venue_latitude, venue_longitude, venue_radius_m, venue_max_accuracy_m)
+  values (p_member, p_session, '10000000-0000-0000-0000-000000000001', now(), p_status,
+    27.7202, 85.3408, 12, 40, 27.7198624, 85.3407743, 100, 50)
+  returning id;
+$$;
+
+select pg_temp.att('00000000-0000-0000-0000-0000000000a1', '20000000-0000-0000-0000-000000000009', 'on_time');
+insert into public.fines (member_id, attendance_id, reason, amount_npr)
+select '00000000-0000-0000-0000-0000000000a1',
+  pg_temp.att('00000000-0000-0000-0000-0000000000a1', '20000000-0000-0000-0000-000000000008', 'late'), 'late', 50;
+select pg_temp.att('00000000-0000-0000-0000-0000000000b1', '20000000-0000-0000-0000-000000000009', 'late');
+
+-- ---------------------------------------------------------------------------
+select is(public.session_closed(public.nepal_today() - 1), true, 'yesterday''s session is closed');
+select is(public.session_closed(public.nepal_today() + 1), false, 'tomorrow''s session is not closed');
+
+-- ---------------------------------------------------------------------------
+-- Member A
+-- ---------------------------------------------------------------------------
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', true);
+set local role authenticated;
+
+select results_eq(
+  $$ select session_date, result from public.my_session_history() $$,
+  $$ values (public.nepal_today() - 7, 'absent'),
+            (public.nepal_today() - 8, 'late'),
+            (public.nepal_today() - 9, 'on_time') $$,
+  'history: newest first; absences derived; cancelled, pre-joining and future sessions excluded');
+
+select results_eq(
+  $$ select fine_npr, fine_status::text from public.my_session_history() where result = 'late' $$,
+  $$ values (50, 'pending') $$,
+  'the late session shows its NPR 50 pending fine');
+
+select is(
+  (select fine_npr from public.my_session_history() where result = 'absent'), null,
+  'an absence has no fine');
+
+select ok(
+  (select latitude is not null and distance_m = 40 from public.my_session_history() where result = 'on_time'),
+  'a member sees their own GPS evidence in their history');
+
+select results_eq(
+  $$ select display_name, status::text from public.team_attendance('20000000-0000-0000-0000-000000000009') $$,
+  $$ values ('Asha', 'on_time'), ('Bikash', 'late') $$,
+  'team view: every member who punched in, with status');
+
+select results_eq(
+  $$ select count(*)::int from public.team_attendance('20000000-0000-0000-0000-000000000007') $$,
+  $$ values (0) $$,
+  'team view lists only members who punched in (no absent list)');
+
+select is(
+  (select count(*)::int from public.attendance where member_id = '00000000-0000-0000-0000-0000000000b1'),
+  0, 'the team view does not open up other members'' attendance rows');
+
+reset role;
+
+-- The team view returns exactly two columns: no coordinates, times or fines.
+select is(
+  (select array_agg(parameter_name::text order by ordinal_position)
+   from information_schema.parameters
+   where specific_name = (select specific_name from information_schema.routines
+                          where routine_schema = 'public' and routine_name = 'team_attendance')
+     and parameter_mode = 'OUT'),
+  array['display_name', 'status'],
+  'team_attendance exposes only display_name and status');
+
+-- ---------------------------------------------------------------------------
+-- Member B sees their own history only
+-- ---------------------------------------------------------------------------
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b1","role":"authenticated"}', true);
+set local role authenticated;
+
+select results_eq(
+  $$ select session_date, result from public.my_session_history() $$,
+  $$ values (public.nepal_today() - 7, 'absent'),
+            (public.nepal_today() - 8, 'absent'),
+            (public.nepal_today() - 9, 'late') $$,
+  'another member gets their own results, not member A''s');
+
+select is(
+  (select count(*)::int from public.my_session_history() where fine_npr is not null),
+  0, 'member B does not see member A''s fine');
+
+reset role;
+
+-- ---------------------------------------------------------------------------
+-- Inactive member and anon
+-- ---------------------------------------------------------------------------
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000e1","role":"authenticated"}', true);
+set local role authenticated;
+select throws_ok(
+  $$ select * from public.team_attendance('20000000-0000-0000-0000-000000000009') $$,
+  '42501', 'Your account is not active.', 'an inactive member cannot use the team view');
+select is((select count(*)::int from public.my_session_history()), 0,
+  'an inactive member gets no history (sessions are hidden from them)');
+reset role;
+
+set local role anon;
+select throws_ok($$ select * from public.my_session_history() $$, '42501', null, 'anon cannot read history');
+select throws_ok($$ select * from public.team_attendance('20000000-0000-0000-0000-000000000009') $$,
+  '42501', null, 'anon cannot use the team view');
+select throws_ok($$ select public.session_closed(current_date) $$, '42501', null, 'anon cannot call session_closed');
+reset role;
+
+select * from finish();
+rollback;

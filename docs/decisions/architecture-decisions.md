@@ -29,7 +29,8 @@
 | Cutoff precision | Server time truncated to whole seconds; 19:15:00.999 is On Time | Phase 4, 2026-11-22 |
 | GPS accuracy limit | 50 m default, per venue, admin-editable | Phase 4, 2026-11-22 |
 | Punch-in operation | punch_in() RPC: auth.uid() + now(); attendance + NPR 50 fine in one transaction; venue settings snapshotted on each attendance row | Phase 4, 2026-11-22 |
-| Team attendance view | `security definer` RPC returning name + status only | A `security_invoker` view would apply own-row RLS and show only the caller |
+| Absence | Derived, never stored: a scheduled session after its window closes (21:00) with no punch-in, counted only from the member's join date; no fine | Phase 5, 2026-11-22 |
+| Team attendance view | `team_attendance()` security definer RPC returning display name + status only, for members who punched in | A `security_invoker` view would apply own-row RLS and show only the caller |
 
 ## Superseded decision
 An earlier discussion proposed GPS + session PIN. The latest explicit user decision removed the PIN because it adds friction. Do not create PIN tables, PIN fields, PIN screens, PIN attempt limits or PIN-related Edge Functions.

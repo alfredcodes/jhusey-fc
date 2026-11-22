@@ -29,6 +29,7 @@ function fakeQuery(state: FakeState, table: string) {
     select: () => builder,
     eq: () => builder,
     gte: () => builder,
+    lte: () => builder,
     order: () => builder,
     limit: () => builder,
     insert: () => builder,
@@ -59,6 +60,7 @@ export function buildFakeSupabase(state: FakeState) {
       updateUser: vi.fn(),
     },
     from: vi.fn((table: string) => fakeQuery(state, table)),
-    rpc: vi.fn(),
+    // Default: return state.rows['rpc:<name>'] (or []). Tests can override per call.
+    rpc: vi.fn(async (name: string) => ({ data: state.rows[`rpc:${name}`] ?? [], error: null })),
   }
 }

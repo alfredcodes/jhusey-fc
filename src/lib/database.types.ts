@@ -282,10 +282,34 @@ export type Database = {
       }
       is_active_member: { Args: Record<PropertyKey, never>; Returns: boolean }
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
+      my_session_history: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          accuracy_m: number
+          distance_m: number
+          fine_npr: number
+          fine_status: Database['public']['Enums']['fine_status']
+          latitude: number
+          longitude: number
+          punched_in_at: string
+          result: string
+          session_date: string
+          session_id: string
+          venue_name: string
+        }[]
+      }
       nepal_today: { Args: Record<PropertyKey, never>; Returns: string }
       punch_in: {
         Args: { p_accuracy_m: number; p_latitude: number; p_longitude: number }
         Returns: Json
+      }
+      session_closed: { Args: { p_session_date: string }; Returns: boolean }
+      team_attendance: {
+        Args: { p_session_id: string }
+        Returns: {
+          display_name: string
+          status: Database['public']['Enums']['attendance_status']
+        }[]
       }
     }
     Enums: {
