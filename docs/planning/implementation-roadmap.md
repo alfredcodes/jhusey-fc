@@ -6,7 +6,8 @@ No implementation starts until the user approves Phase 1.
 - Phase 1 foundation: done 2026-11-21
 - Phase 2 Supabase auth and permissions: done 2026-11-22
 - Phase 3 sessions and venue: done 2026-11-22
-- Phases 4-7: not started
+- Phase 4 punch-in and late fines: done 2026-11-22
+- Phases 5-7: not started
 
 ## Phase 0 - Preparation (this pack)
 - Confirm architecture and business rules.

@@ -71,7 +71,8 @@ export default function AdminVenuesPage() {
                   {venue.latitude}, {venue.longitude}
                 </p>
                 <p className="text-sm text-slate-600">
-                  Punch-in radius: {venue.geofence_radius_m} m ·{' '}
+                  Punch-in radius: {venue.geofence_radius_m} m · GPS accuracy needed: ±
+                  {venue.max_accuracy_m} m ·{' '}
                   <a
                     href={osmLink(venue)}
                     target="_blank"
@@ -127,6 +128,7 @@ function VenueForm({
         name: String(form.get('name')).trim(),
         ...point,
         geofence_radius_m: Number(form.get('radius')),
+        max_accuracy_m: Number(form.get('max_accuracy')),
         is_active: venue ? form.get('is_active') === 'on' : true,
       })
       onDone(venue ? 'Venue updated.' : 'Venue added.')
@@ -185,6 +187,25 @@ function VenueForm({
         </label>
         <p id="radius-help" className="mt-1 text-sm text-slate-600">
           100 m is the starting value. Adjust after testing phones at the venue.
+        </p>
+      </div>
+      <div>
+        <label className="block text-sm font-medium">
+          GPS accuracy needed (metres)
+          <input
+            name="max_accuracy"
+            type="number"
+            required
+            min={10}
+            max={500}
+            aria-describedby="accuracy-help"
+            defaultValue={venue?.max_accuracy_m ?? 50}
+            className={inputClass}
+          />
+        </label>
+        <p id="accuracy-help" className="mt-1 text-sm text-slate-600">
+          Punch-in is refused when the phone says its location could be off by more than this. 50 m
+          is the starting value.
         </p>
       </div>
       {venue && (

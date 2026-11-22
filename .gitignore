@@ -36,3 +36,6 @@ Thumbs.db
 
 # Claude Code personal settings
 .claude/settings.local.json
+
+# Supabase Studio saved SQL snippets (may contain personal data)
+supabase/snippets/

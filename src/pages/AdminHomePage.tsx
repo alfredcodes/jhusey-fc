@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import AdminTodayAttendance from '../features/attendance/AdminTodayAttendance.tsx'
 import NextSessionCard from '../features/sessions/NextSessionCard.tsx'
 
 const sections = [
@@ -26,6 +27,7 @@ export default function AdminHomePage() {
           </Link>
         ))}
       </div>
+      <AdminTodayAttendance />
       <NextSessionCard />
     </section>
   )

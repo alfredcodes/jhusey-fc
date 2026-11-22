@@ -8,6 +8,8 @@ select plan(22);
 
 -- Start from an empty slate. Everything runs in one transaction that is rolled
 -- back at the end, so real local data is untouched.
+delete from public.fines;
+delete from public.attendance;
 delete from public.sessions;
 delete from public.venues;
 delete from auth.users;

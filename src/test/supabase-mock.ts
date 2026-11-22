@@ -34,6 +34,7 @@ function fakeQuery(state: FakeState, table: string) {
     insert: () => builder,
     update: () => builder,
     delete: () => builder,
+    maybeSingle: async () => ({ data: state.rows[table]?.[0] ?? null, error: null }),
     single: async () =>
       table === 'profiles' && state.profile
         ? { data: state.profile, error: null }

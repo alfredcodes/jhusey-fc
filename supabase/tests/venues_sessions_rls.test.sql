@@ -6,6 +6,8 @@ set search_path = public, extensions;
 select plan(27);
 
 -- Start from an empty slate (rolled back at the end; real local data is untouched).
+delete from public.fines;
+delete from public.attendance;
 delete from public.sessions;
 delete from public.venues;
 delete from auth.users;
