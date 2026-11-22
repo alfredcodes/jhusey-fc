@@ -9,7 +9,8 @@ No implementation starts until the user approves Phase 1.
 - Phase 4 punch-in and late fines: done 2026-11-22
 - Phase 5 member experience: done 2026-11-22
 - Phase 6 admin operations: done 2026-11-22
-- Phase 7: not started
+- Phase 7A reports and CSV export: done 2026-11-22
+- Phase 7B launch: not started (needs approval; see docs/handover/launch-checklist.md)
 
 ## Phase 0 - Preparation (this pack)
 - Confirm architecture and business rules.

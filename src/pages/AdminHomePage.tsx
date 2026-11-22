@@ -15,6 +15,11 @@ const sections = [
   },
   { to: '/admin/members', title: 'Members', text: 'Rename, deactivate or reactivate.' },
   {
+    to: '/admin/reports',
+    title: 'Reports and backup',
+    text: 'Attendance and money by date range; CSV download.',
+  },
+  {
     to: '/admin/sessions',
     title: 'Sessions',
     text: 'Create the calendar, cancel or restore dates.',

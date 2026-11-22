@@ -8,6 +8,7 @@ import AdminAttendancePage from './features/admin/AdminAttendancePage.tsx'
 import AdminAuditPage from './features/admin/AdminAuditPage.tsx'
 import AdminFinesPage from './features/admin/AdminFinesPage.tsx'
 import AdminMembersPage from './features/admin/AdminMembersPage.tsx'
+import AdminReportsPage from './features/admin/AdminReportsPage.tsx'
 import HistoryPage from './features/history/HistoryPage.tsx'
 import TeamPage from './features/history/TeamPage.tsx'
 import AdminSessionsPage from './features/sessions/AdminSessionsPage.tsx'
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="attendance" element={<AdminAttendancePage />} />
             <Route path="fines" element={<AdminFinesPage />} />
             <Route path="members" element={<AdminMembersPage />} />
+            <Route path="reports" element={<AdminReportsPage />} />
             <Route path="audit" element={<AdminAuditPage />} />
             <Route path="sessions" element={<AdminSessionsPage />} />
             <Route path="venues" element={<AdminVenuesPage />} />

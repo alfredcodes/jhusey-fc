@@ -401,6 +401,23 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_attendance_report: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          absent: number
+          attendance_percent: number
+          display_name: string
+          fines_npr: number
+          fines_outstanding_npr: number
+          fines_paid_npr: number
+          fines_waived_npr: number
+          is_active: boolean
+          late: number
+          member_id: string
+          on_time: number
+          sessions: number
+        }[]
+      }
       admin_correct_attendance: {
         Args: {
           p_attendance_id: string
@@ -412,6 +429,49 @@ export type Database = {
       admin_create_sessions: {
         Args: { p_from: string; p_to: string; p_venue_id: string; p_weekdays: number[] }
         Returns: number
+      }
+      admin_export_attendance: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          accuracy_m: number
+          admin_reason: string
+          distance_m: number
+          latitude: number
+          longitude: number
+          member: string
+          original_status: string
+          punched_in_nepal: string
+          session_date: string
+          source: string
+          status: string
+          venue: string
+        }[]
+      }
+      admin_export_fines: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          amount_npr: number
+          created_nepal: string
+          member: string
+          payment_id: string
+          reason: string
+          session_date: string
+          status: string
+        }[]
+      }
+      admin_export_payments: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          amount_npr: number
+          fines_count: number
+          member: string
+          method: string
+          note: string
+          payment_id: string
+          recorded_nepal: string
+          void_reason: string
+          voided_nepal: string
+        }[]
       }
       admin_record_attendance: {
         Args: { p_arrived_at: string; p_member_id: string; p_reason: string; p_session_id: string }
@@ -431,6 +491,7 @@ export type Database = {
         Args: { p_at: string; p_session_date: string }
         Returns: Database['public']['Enums']['attendance_status']
       }
+      check_report_range: { Args: { p_from: string; p_to: string }; Returns: undefined }
       distance_m: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number

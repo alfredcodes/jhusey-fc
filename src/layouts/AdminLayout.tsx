@@ -7,6 +7,7 @@ const navItems = [
   { to: '/admin/attendance', label: 'Attendance', end: false },
   { to: '/admin/fines', label: 'Fines', end: false },
   { to: '/admin/members', label: 'Members', end: false },
+  { to: '/admin/reports', label: 'Reports', end: false },
   { to: '/admin/sessions', label: 'Sessions', end: false },
   { to: '/admin/venues', label: 'Venues', end: false },
   { to: '/admin/audit', label: 'Audit', end: false },

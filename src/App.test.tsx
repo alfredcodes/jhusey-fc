@@ -50,6 +50,7 @@ describe('signed in as a member', () => {
     '/admin/attendance',
     '/admin/fines',
     '/admin/members',
+    '/admin/reports',
     '/admin/audit',
     '/admin/sessions',
     '/admin/venues',
