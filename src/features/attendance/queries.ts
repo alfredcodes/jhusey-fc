@@ -26,7 +26,9 @@ export function useMyAttendance(sessionId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('attendance')
-        .select('id, punched_in_at, status, distance_m, accuracy_m, fine:fines(amount_npr, status)')
+        .select(
+          'id, punched_in_at, status, source, distance_m, accuracy_m, fine:fines(amount_npr, status)',
+        )
         .eq('session_id', sessionId!)
         .eq('member_id', userId!)
         .maybeSingle()
@@ -62,7 +64,7 @@ export function useSessionAttendance(sessionId: string | undefined) {
       const { data, error } = await supabase
         .from('attendance')
         .select(
-          'id, member_id, punched_in_at, status, distance_m, accuracy_m, member:profiles(display_name)',
+          'id, member_id, punched_in_at, status, source, distance_m, accuracy_m, member:profiles!attendance_member_id_fkey(display_name)',
         )
         .eq('session_id', sessionId!)
         .order('punched_in_at')

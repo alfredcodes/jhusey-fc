@@ -4,6 +4,10 @@ import LoginPage from './features/auth/LoginPage.tsx'
 import RequireAdmin from './features/auth/RequireAdmin.tsx'
 import RequireAuth from './features/auth/RequireAuth.tsx'
 import SetPasswordPage from './features/auth/SetPasswordPage.tsx'
+import AdminAttendancePage from './features/admin/AdminAttendancePage.tsx'
+import AdminAuditPage from './features/admin/AdminAuditPage.tsx'
+import AdminFinesPage from './features/admin/AdminFinesPage.tsx'
+import AdminMembersPage from './features/admin/AdminMembersPage.tsx'
 import HistoryPage from './features/history/HistoryPage.tsx'
 import TeamPage from './features/history/TeamPage.tsx'
 import AdminSessionsPage from './features/sessions/AdminSessionsPage.tsx'
@@ -32,6 +36,10 @@ export default function App() {
         <Route element={<RequireAdmin />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminHomePage />} />
+            <Route path="attendance" element={<AdminAttendancePage />} />
+            <Route path="fines" element={<AdminFinesPage />} />
+            <Route path="members" element={<AdminMembersPage />} />
+            <Route path="audit" element={<AdminAuditPage />} />
             <Route path="sessions" element={<AdminSessionsPage />} />
             <Route path="venues" element={<AdminVenuesPage />} />
           </Route>

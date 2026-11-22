@@ -17,6 +17,8 @@ vi.mock('../../lib/supabase.ts', async () => {
 
 const base = {
   venue_name: 'Dhanyentari Futsal',
+  original_status: null,
+  source: null,
   punched_in_at: null,
   latitude: null,
   longitude: null,

@@ -7,6 +7,8 @@ function row(result: HistoryRow['result']): HistoryRow {
     session_date: '2026-11-20',
     venue_name: 'Court',
     result,
+    original_status: null,
+    source: null,
     punched_in_at: null,
     latitude: null,
     longitude: null,

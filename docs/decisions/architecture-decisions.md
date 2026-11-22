@@ -30,6 +30,10 @@
 | GPS accuracy limit | 50 m default, per venue, admin-editable | Phase 4, 2026-11-22 |
 | Punch-in operation | punch_in() RPC: auth.uid() + now(); attendance + NPR 50 fine in one transaction; venue settings snapshotted on each attendance row | Phase 4, 2026-11-22 |
 | Absence | Derived, never stored: a scheduled session after its window closes (21:00) with no punch-in, counted only from the member's join date; no fine | Phase 5, 2026-11-22 |
+| Payments | One payment = one or more whole pending fines of one member; no partial payments; voided (never deleted) with a reason, fines return to pending | Phase 6, 2026-11-22 |
+| Manual attendance | Admin records arrival time + reason; source = admin, no GPS; same 19:15 rule and NPR 50 fine | Phase 6, 2026-11-22 |
+| Corrections | Evidence columns immutable (trigger); only current status changes, original_status kept; Late→On time waives the pending fine, On time→Late creates/reinstates it; blocked while the fine is paid | Phase 6, 2026-11-22 |
+| Audit | Single audit_log written by every admin RPC (actor, action, entity, reason, details); admin read-only | Phase 6, 2026-11-22 |
 | Team attendance view | `team_attendance()` security definer RPC returning display name + status only, for members who punched in | A `security_invoker` view would apply own-row RLS and show only the caller |
 
 ## Superseded decision

@@ -45,7 +45,15 @@ describe('signed in as a member', () => {
     expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument()
   })
 
-  it.each(['/admin', '/admin/sessions', '/admin/venues'])('cannot open %s', async (path) => {
+  it.each([
+    '/admin',
+    '/admin/attendance',
+    '/admin/fines',
+    '/admin/members',
+    '/admin/audit',
+    '/admin/sessions',
+    '/admin/venues',
+  ])('cannot open %s', async (path) => {
     renderWithProviders(<App />, { path })
     expect(await heading('Member dashboard')).toBeInTheDocument()
   })

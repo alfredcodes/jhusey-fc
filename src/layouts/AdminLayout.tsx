@@ -4,8 +4,12 @@ import SignOutButton from '../features/auth/SignOutButton.tsx'
 
 const navItems = [
   { to: '/admin', label: 'Dashboard', end: true },
+  { to: '/admin/attendance', label: 'Attendance', end: false },
+  { to: '/admin/fines', label: 'Fines', end: false },
+  { to: '/admin/members', label: 'Members', end: false },
   { to: '/admin/sessions', label: 'Sessions', end: false },
   { to: '/admin/venues', label: 'Venues', end: false },
+  { to: '/admin/audit', label: 'Audit', end: false },
 ]
 
 export default function AdminLayout() {
@@ -19,7 +23,7 @@ export default function AdminLayout() {
           <NepalClock />
         </div>
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 pb-3 text-sm">
-          <nav className="flex gap-1" aria-label="Admin">
+          <nav className="flex flex-wrap gap-1" aria-label="Admin">
             {navItems.map((item) => (
               <NavLink
                 key={item.to}

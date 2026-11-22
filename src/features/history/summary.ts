@@ -4,6 +4,9 @@ export type HistoryRow = {
   session_date: string
   venue_name: string
   result: 'on_time' | 'late' | 'absent' | 'open'
+  /** First result at punch-in; differs from result when the admin corrected it. */
+  original_status: 'on_time' | 'late' | null
+  source: 'gps' | 'admin' | null
   punched_in_at: string | null
   latitude: number | null
   longitude: number | null

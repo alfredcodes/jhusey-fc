@@ -8,7 +8,8 @@ No implementation starts until the user approves Phase 1.
 - Phase 3 sessions and venue: done 2026-11-22
 - Phase 4 punch-in and late fines: done 2026-11-22
 - Phase 5 member experience: done 2026-11-22
-- Phases 6-7: not started
+- Phase 6 admin operations: done 2026-11-22
+- Phase 7: not started
 
 ## Phase 0 - Preparation (this pack)
 - Confirm architecture and business rules.

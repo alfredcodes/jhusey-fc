@@ -17,8 +17,10 @@
     Was: is 19:15:00.999 On Time? Proposal: truncate server time to whole seconds (yes, On Time).
 14. ~~Punch-in window~~ **Resolved 2026-11-22:** 18:30:00-21:00:00 Nepal time on the session date.
     Was: when does punch-in open and close? Proposal: same Nepal calendar date as the session, between an agreed open and close time.
-15. **Manual attendance:** can the admin record attendance (without GPS) for a member whose phone failed at the venue? Affects nullable GPS columns.
+15. ~~Manual attendance~~ **Resolved 2026-11-22:** yes; admin records arrival time + reason, source = admin, no GPS, same 19:15 rule and fine.
+    Was: can the admin record attendance (without GPS) for a member whose phone failed at the venue? Affects nullable GPS columns.
 16. **Absence vs late:** a late member who does not punch in is Absent with no fine, which is cheaper than Late (NPR 50). Acknowledge, or define an absence rule?
-17. **Payment model:** proposal for v1: one confirmed payment covers one or more whole fines; no partial payments.
+17. ~~Payment model~~ **Resolved 2026-11-22:** one payment covers one or more whole pending fines of one member; no partial payments; mistakes are voided with a reason.
+    Was: proposal for v1: one confirmed payment covers one or more whole fines; no partial payments.
 18. **Phone numbers:** drop from v1, or store in a separate admin-only table? (Phase 2 created no phone column.)
 19. **Email sending domain:** Resend only delivers to arbitrary recipients from a verified domain. `jhusey-fc.com` is not purchased. Before inviting real members, either buy the domain (or use another domain you own) and verify it in Resend, or choose another approach.

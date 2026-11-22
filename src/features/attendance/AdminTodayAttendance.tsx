@@ -3,6 +3,7 @@ import { errorMessage } from '../../lib/errors.ts'
 import { formatNepalTime, nepalToday } from '../../lib/nepal-time.ts'
 import { useUpcomingSessions } from '../sessions/queries.ts'
 import AttendanceStatusBadge from './AttendanceStatusBadge.tsx'
+import { evidenceText } from './evidence.ts'
 import { useActiveMembers, useSessionAttendance } from './queries.ts'
 
 /** Admin dashboard: who has punched in for today's session, and who has not yet. */
@@ -41,9 +42,7 @@ export default function AdminTodayAttendance() {
               <span className="font-medium">{row.member?.display_name}</span>
               <span className="flex items-center gap-3 text-sm text-slate-600">
                 {formatNepalTime(new Date(row.punched_in_at))}
-                <span>
-                  {Math.round(row.distance_m)} m · ±{Math.round(row.accuracy_m)} m
-                </span>
+                <span>{evidenceText(row)}</span>
                 <AttendanceStatusBadge status={row.status} />
               </span>
             </li>

@@ -39,21 +39,36 @@ export default function HistoryPage() {
                 </span>
               </div>
               <p className="text-sm text-slate-600">{row.venue_name}</p>
+              {row.original_status && row.original_status !== row.result && (
+                <p className="text-sm text-slate-600">
+                  Corrected by the admin (originally{' '}
+                  {row.original_status === 'late' ? 'Late' : 'On time'})
+                </p>
+              )}
+              {row.source === 'admin' && (
+                <p className="text-sm text-slate-600">Recorded by the admin (no GPS)</p>
+              )}
 
               {row.punched_in_at && (
                 <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
                   <div>
-                    <dt className="text-slate-500">Punched in</dt>
+                    <dt className="text-slate-500">
+                      {row.source === 'admin' ? 'Arrived' : 'Punched in'}
+                    </dt>
                     <dd className="font-mono">{formatNepalTime(new Date(row.punched_in_at))}</dd>
                   </div>
-                  <div>
-                    <dt className="text-slate-500">Distance</dt>
-                    <dd>{Math.round(row.distance_m ?? 0)} m</dd>
-                  </div>
-                  <div>
-                    <dt className="text-slate-500">GPS accuracy</dt>
-                    <dd>±{Math.round(row.accuracy_m ?? 0)} m</dd>
-                  </div>
+                  {row.distance_m !== null && (
+                    <div>
+                      <dt className="text-slate-500">Distance</dt>
+                      <dd>{Math.round(row.distance_m)} m</dd>
+                    </div>
+                  )}
+                  {row.accuracy_m !== null && (
+                    <div>
+                      <dt className="text-slate-500">GPS accuracy</dt>
+                      <dd>±{Math.round(row.accuracy_m)} m</dd>
+                    </div>
+                  )}
                   {row.latitude !== null && row.longitude !== null && (
                     <div>
                       <dt className="text-slate-500">Location</dt>

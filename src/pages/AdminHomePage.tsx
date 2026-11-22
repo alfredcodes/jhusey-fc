@@ -4,11 +4,23 @@ import NextSessionCard from '../features/sessions/NextSessionCard.tsx'
 
 const sections = [
   {
+    to: '/admin/attendance',
+    title: 'Attendance',
+    text: 'Correct a result or record attendance without GPS.',
+  },
+  {
+    to: '/admin/fines',
+    title: 'Fines and payments',
+    text: 'Record payments, waive fines, void mistakes.',
+  },
+  { to: '/admin/members', title: 'Members', text: 'Rename, deactivate or reactivate.' },
+  {
     to: '/admin/sessions',
     title: 'Sessions',
     text: 'Create the calendar, cancel or restore dates.',
   },
   { to: '/admin/venues', title: 'Venues', text: 'Court location and punch-in radius.' },
+  { to: '/admin/audit', title: 'Audit log', text: 'Every admin change with who, when and why.' },
 ]
 
 export default function AdminHomePage() {

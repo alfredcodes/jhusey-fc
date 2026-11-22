@@ -25,15 +25,19 @@ export type Database = {
     Tables: {
       attendance: {
         Row: {
-          accuracy_m: number
+          accuracy_m: number | null
           created_at: string
-          distance_m: number
+          distance_m: number | null
           id: string
-          latitude: number
-          longitude: number
+          latitude: number | null
+          longitude: number | null
+          manual_reason: string | null
           member_id: string
+          original_status: Database['public']['Enums']['attendance_status']
           punched_in_at: string
+          recorded_by: string | null
           session_id: string
+          source: Database['public']['Enums']['attendance_source']
           status: Database['public']['Enums']['attendance_status']
           venue_id: string
           venue_latitude: number
@@ -43,15 +47,19 @@ export type Database = {
         }
         ComputedFields: never
         Insert: {
-          accuracy_m: number
+          accuracy_m?: number | null
           created_at?: string
-          distance_m: number
+          distance_m?: number | null
           id?: string
-          latitude: number
-          longitude: number
+          latitude?: number | null
+          longitude?: number | null
+          manual_reason?: string | null
           member_id: string
+          original_status: Database['public']['Enums']['attendance_status']
           punched_in_at: string
+          recorded_by?: string | null
           session_id: string
+          source?: Database['public']['Enums']['attendance_source']
           status: Database['public']['Enums']['attendance_status']
           venue_id: string
           venue_latitude: number
@@ -60,15 +68,19 @@ export type Database = {
           venue_radius_m: number
         }
         Update: {
-          accuracy_m?: number
+          accuracy_m?: number | null
           created_at?: string
-          distance_m?: number
+          distance_m?: number | null
           id?: string
-          latitude?: number
-          longitude?: number
+          latitude?: number | null
+          longitude?: number | null
+          manual_reason?: string | null
           member_id?: string
+          original_status?: Database['public']['Enums']['attendance_status']
           punched_in_at?: string
+          recorded_by?: string | null
           session_id?: string
+          source?: Database['public']['Enums']['attendance_source']
           status?: Database['public']['Enums']['attendance_status']
           venue_id?: string
           venue_latitude?: number
@@ -80,6 +92,13 @@ export type Database = {
           {
             foreignKeyName: 'attendance_member_id_fkey'
             columns: ['member_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'attendance_recorded_by_fkey'
+            columns: ['recorded_by']
             isOneToOne: false
             referencedRelation: 'profiles'
             referencedColumns: ['id']
@@ -100,6 +119,48 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          details: NonNullable<Json>
+          entity: string
+          entity_id: string
+          id: string
+          reason: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          details?: NonNullable<Json>
+          entity: string
+          entity_id: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          details?: NonNullable<Json>
+          entity?: string
+          entity_id?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'audit_log_actor_id_fkey'
+            columns: ['actor_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       fines: {
         Row: {
           amount_npr: number
@@ -107,6 +168,7 @@ export type Database = {
           created_at: string
           id: string
           member_id: string
+          payment_id: string | null
           reason: string
           status: Database['public']['Enums']['fine_status']
           updated_at: string
@@ -118,6 +180,7 @@ export type Database = {
           created_at?: string
           id?: string
           member_id: string
+          payment_id?: string | null
           reason: string
           status?: Database['public']['Enums']['fine_status']
           updated_at?: string
@@ -128,6 +191,7 @@ export type Database = {
           created_at?: string
           id?: string
           member_id?: string
+          payment_id?: string | null
           reason?: string
           status?: Database['public']['Enums']['fine_status']
           updated_at?: string
@@ -143,6 +207,75 @@ export type Database = {
           {
             foreignKeyName: 'fines_member_id_fkey'
             columns: ['member_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fines_payment_id_fkey'
+            columns: ['payment_id']
+            isOneToOne: false
+            referencedRelation: 'payments'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount_npr: number
+          created_at: string
+          id: string
+          member_id: string
+          method: string
+          note: string | null
+          recorded_by: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          amount_npr: number
+          created_at?: string
+          id?: string
+          member_id: string
+          method: string
+          note?: string | null
+          recorded_by: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Update: {
+          amount_npr?: number
+          created_at?: string
+          id?: string
+          member_id?: string
+          method?: string
+          note?: string | null
+          recorded_by?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'payments_member_id_fkey'
+            columns: ['member_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'payments_recorded_by_fkey'
+            columns: ['recorded_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'payments_voided_by_fkey'
+            columns: ['voided_by']
             isOneToOne: false
             referencedRelation: 'profiles'
             referencedColumns: ['id']
@@ -268,10 +401,32 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_correct_attendance: {
+        Args: {
+          p_attendance_id: string
+          p_new_status: Database['public']['Enums']['attendance_status']
+          p_reason: string
+        }
+        Returns: undefined
+      }
       admin_create_sessions: {
         Args: { p_from: string; p_to: string; p_venue_id: string; p_weekdays: number[] }
         Returns: number
       }
+      admin_record_attendance: {
+        Args: { p_arrived_at: string; p_member_id: string; p_reason: string; p_session_id: string }
+        Returns: Database['public']['Enums']['attendance_status']
+      }
+      admin_record_payment: {
+        Args: { p_fine_ids: string[]; p_member_id: string; p_method: string; p_note: string }
+        Returns: string
+      }
+      admin_update_member: {
+        Args: { p_display_name: string; p_is_active: boolean; p_member_id: string }
+        Returns: undefined
+      }
+      admin_void_payment: { Args: { p_payment_id: string; p_reason: string }; Returns: undefined }
+      admin_waive_fine: { Args: { p_fine_id: string; p_reason: string }; Returns: undefined }
       attendance_status_for: {
         Args: { p_at: string; p_session_date: string }
         Returns: Database['public']['Enums']['attendance_status']
@@ -291,10 +446,12 @@ export type Database = {
           fine_status: Database['public']['Enums']['fine_status']
           latitude: number
           longitude: number
+          original_status: Database['public']['Enums']['attendance_status']
           punched_in_at: string
           result: string
           session_date: string
           session_id: string
+          source: Database['public']['Enums']['attendance_source']
           venue_name: string
         }[]
       }
@@ -303,6 +460,8 @@ export type Database = {
         Args: { p_accuracy_m: number; p_latitude: number; p_longitude: number }
         Returns: Json
       }
+      require_admin: { Args: Record<PropertyKey, never>; Returns: undefined }
+      require_reason: { Args: { p_reason: string }; Returns: string }
       session_closed: { Args: { p_session_date: string }; Returns: boolean }
       team_attendance: {
         Args: { p_session_id: string }
@@ -311,9 +470,20 @@ export type Database = {
           status: Database['public']['Enums']['attendance_status']
         }[]
       }
+      write_audit: {
+        Args: {
+          p_action: string
+          p_details: Json
+          p_entity: string
+          p_entity_id: string
+          p_reason: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: 'admin' | 'member'
+      attendance_source: 'gps' | 'admin'
       attendance_status: 'on_time' | 'late'
       fine_status: 'pending' | 'paid' | 'waived'
       session_status: 'scheduled' | 'cancelled'
@@ -432,6 +602,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ['admin', 'member'],
+      attendance_source: ['gps', 'admin'],
       attendance_status: ['on_time', 'late'],
       fine_status: ['pending', 'paid', 'waived'],
       session_status: ['scheduled', 'cancelled'],

@@ -5,7 +5,9 @@ set search_path = public, extensions;
 
 select plan(17);
 
+delete from public.audit_log;
 delete from public.fines;
+delete from public.payments;
 delete from public.attendance;
 delete from public.sessions;
 delete from public.venues;

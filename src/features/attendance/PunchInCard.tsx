@@ -4,6 +4,7 @@ import { errorMessage } from '../../lib/errors.ts'
 import { getCurrentPosition, LocationError } from '../../lib/geolocation.ts'
 import { formatNepalTime } from '../../lib/nepal-time.ts'
 import AttendanceStatusBadge from './AttendanceStatusBadge.tsx'
+import { evidenceText } from './evidence.ts'
 import { useMyAttendance, usePunchIn } from './queries.ts'
 
 type Step = 'idle' | 'locating' | 'sending'
@@ -50,8 +51,7 @@ export default function PunchInCard({
           <AttendanceStatusBadge status={record.status} />
         </p>
         <p className="mt-1 text-sm text-slate-600">
-          {Math.round(record.distance_m)} m from {venueName} · GPS ±{Math.round(record.accuracy_m)}{' '}
-          m
+          {venueName} · {evidenceText(record)}
         </p>
         {record.fine && (
           <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
