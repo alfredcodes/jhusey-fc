@@ -167,17 +167,23 @@ export function useUpdateSession() {
       const { error } = await supabase.from('sessions').update(fields).eq('id', id)
       if (error) throw error
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.sessions }),
+    // Cancelling waives the game's unpaid absence fines (database trigger): refresh everything.
+    onSuccess: () => queryClient.invalidateQueries(),
   })
 }
 
 export function useDeleteSession() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('sessions').delete().eq('id', id)
+    // A game created by mistake: removed with its automatic absence fines, with a reason
+    // (audited). The database refuses if anyone punched in or a fine was paid.
+    mutationFn: async (input: { id: string; reason: string }) => {
+      const { error } = await supabase.rpc('admin_delete_session', {
+        p_session_id: input.id,
+        p_reason: input.reason,
+      })
       if (error) throw error
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.sessions }),
+    onSuccess: () => queryClient.invalidateQueries(),
   })
 }

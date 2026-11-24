@@ -12,6 +12,7 @@ import {
   smallButtonClass,
 } from '../../components/form.tsx'
 import { Icon } from '../../components/icons.tsx'
+import ReasonPrompt from '../../components/ReasonPrompt.tsx'
 import {
   Badge,
   Card,
@@ -194,7 +195,6 @@ function SessionRowItem({
   const busy = update.isPending || remove.isPending
   const cancelled = session.status === 'cancelled'
   const isToday = session.session_date === nepalToday()
-  const isPast = session.session_date < nepalToday()
 
   async function run(action: () => Promise<unknown>) {
     setError(null)
@@ -258,54 +258,43 @@ function SessionRowItem({
       <Td align="right">
         <div className="flex flex-wrap items-center justify-end gap-1.5">
           {!cancelled && <GameResponseButton session={session} />}
-          {isAdmin &&
-            !isPast &&
-            (confirmDelete ? (
-              <>
-                <button
-                  type="button"
-                  disabled={busy}
-                  className={`${smallButtonClass} border-rose-200 text-rose-600`}
-                  onClick={() => run(() => remove.mutateAsync(session.id))}
-                >
-                  Confirm delete
-                </button>
-                <button
-                  type="button"
-                  className={smallButtonClass}
-                  onClick={() => setConfirmDelete(false)}
-                >
-                  Keep
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  disabled={busy}
-                  className={smallButtonClass}
-                  onClick={() =>
-                    run(() =>
-                      update.mutateAsync({
-                        id: session.id,
-                        status: cancelled ? 'scheduled' : 'cancelled',
-                      }),
-                    )
-                  }
-                >
-                  {cancelled ? 'Restore' : 'Cancel'}
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  className={smallButtonClass}
-                  onClick={() => setConfirmDelete(true)}
-                >
-                  Delete
-                </button>
-              </>
-            ))}
+          {isAdmin && (
+            <>
+              <button
+                type="button"
+                disabled={busy}
+                className={smallButtonClass}
+                onClick={() =>
+                  run(() =>
+                    update.mutateAsync({
+                      id: session.id,
+                      status: cancelled ? 'scheduled' : 'cancelled',
+                    }),
+                  )
+                }
+              >
+                {cancelled ? 'Restore' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                className={smallButtonClass}
+                onClick={() => setConfirmDelete(true)}
+              >
+                Delete
+              </button>
+            </>
+          )}
         </div>
+        {confirmDelete && (
+          <ReasonPrompt
+            title={`Delete the game on ${formatCalendarDate(session.session_date)}?`}
+            description="For a game created by mistake. Its automatic absence fines are removed with it. If anyone punched in or a fine was paid, cancel the game instead."
+            confirmLabel="Delete game"
+            onCancel={() => setConfirmDelete(false)}
+            onConfirm={(reason) => remove.mutateAsync({ id: session.id, reason })}
+          />
+        )}
       </Td>
     </tr>
   )

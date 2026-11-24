@@ -711,6 +711,31 @@ describe('Futsal Games', () => {
     expect(screen.getByText(/before 9 PM on/)).toBeInTheDocument()
   })
 
+  it('the admin deletes a game created by mistake with a reason, or sees why it cannot be deleted', async () => {
+    as('admin')
+    renderWithProviders(<SessionsPage />)
+    const user = userEvent.setup()
+    await user.click(await screen.findByRole('button', { name: 'Delete' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toHaveTextContent('automatic absence fines are removed')
+
+    vi.mocked(supabase.rpc).mockResolvedValueOnce({
+      data: null,
+      error: {
+        code: '22023',
+        message:
+          'Someone punched in for this game, so it is part of the history. Cancel it instead.',
+      },
+    } as never)
+    await user.type(within(dialog).getByRole('textbox'), 'Created by mistake')
+    await user.click(within(dialog).getByRole('button', { name: 'Delete game' }))
+    expect(supabase.rpc).toHaveBeenCalledWith('admin_delete_session', {
+      p_session_id: 's-next',
+      p_reason: 'Created by mistake',
+    })
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Cancel it instead.')
+  })
+
   it('the admin must choose a weekday before creating games', async () => {
     as('admin')
     fake.rows.venues = [{ id: 'v1', name: 'Court', is_active: true }]

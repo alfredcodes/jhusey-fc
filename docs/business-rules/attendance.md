@@ -36,6 +36,12 @@ Stored in `member_inactive_periods`; decided by `member_counted_on()`.
 - Punch-in, GPS check, On time / Late and the late fine are exactly as for regular players.
 - Stored in `game_commitments`; decided by `member_expected()` (current plan of the member).
 
+## Cancelled and mistaken games (2026-11-24)
+- Cancelling a game waives its unpaid absence fines (reason "Game cancelled", audited). Restoring
+  it does not bring them back.
+- A game created by mistake can be deleted with a reason; its automatic absence fines go with it.
+  Refused if anyone punched in or any fine for it was paid: cancel it instead.
+
 ## Sessions
 Sessions are recurring, but each attendance record must reference a concrete session/date. A member cannot punch in twice for the same session. Absence status should be derived only after the relevant session's attendance window is closed and must not automatically create a fine unless an approved rule says so.
 

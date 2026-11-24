@@ -912,6 +912,7 @@ export type Database = {
         Returns: number
       }
       admin_delete_member: { Args: { p_member_id: string; p_reason: string }; Returns: undefined }
+      admin_delete_session: { Args: { p_reason: string; p_session_id: string }; Returns: undefined }
       admin_excuse_absence: {
         Args: { p_member_id: string; p_reason: string; p_session_id: string }
         Returns: undefined
@@ -1050,6 +1051,7 @@ export type Database = {
             Args: { p_at: string; p_cutoff: string; p_session_date: string }
             Returns: Database['public']['Enums']['attendance_status']
           }
+      audit_actor: { Args: Record<PropertyKey, never>; Returns: string }
       check_fee_month: { Args: { p_month: string }; Returns: string }
       check_report_range: { Args: { p_from: string; p_to: string }; Returns: undefined }
       confirm_game: { Args: { p_session_id: string }; Returns: undefined }
@@ -1223,6 +1225,10 @@ export type Database = {
       }
       time_label: { Args: { p_time: string }; Returns: string }
       update_my_phone: { Args: { p_phone: string }; Returns: undefined }
+      waive_absence_fines_of_session: {
+        Args: { p_automatic: boolean; p_reason: string; p_session_id: string }
+        Returns: number
+      }
       withdraw_absence: { Args: { p_session_id: string }; Returns: undefined }
       withdraw_game_confirmation: { Args: { p_session_id: string }; Returns: undefined }
       write_audit: {
