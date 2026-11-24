@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import {
   FormError,
   FormSuccess,
-  primaryButtonClass,
   secondaryButtonClass,
   smallButtonClass,
 } from '../../components/form.tsx'
@@ -15,7 +14,6 @@ import {
   CardHeader,
   EmptyState,
   LoadingRows,
-  PageHeader,
   SearchInput,
   SelectFilter,
   StatCard,
@@ -28,7 +26,6 @@ import { downloadCsv, toCsv } from '../../lib/csv.ts'
 import { errorMessage } from '../../lib/errors.ts'
 import { formatNepalDate, formatNepalTime } from '../../lib/nepal-time.ts'
 import { methodLabel, PAYMENT_METHODS, usePaymentNotes, useVoidPayment } from '../admin/queries.ts'
-import RecordPaymentModal from '../fines/RecordPaymentModal.tsx'
 import {
   currentMonth,
   monthLabel,
@@ -39,13 +36,15 @@ import {
   type TeamPayment,
 } from '../team/queries.ts'
 
-/** Payments of fines (no membership fees). Everyone sees amounts; only the admin records or voids. */
-export default function PaymentsPage() {
+/**
+ * Payments of fines (monthly membership fees live under Monthly Fees). Shown as a tab of the
+ * Fines page. Everyone sees amounts; only the admin records (from the Fines page) or voids.
+ */
+export default function FinePayments() {
   const isAdmin = useIsAdmin()
   const [month, setMonth] = useState(currentMonth())
   const [search, setSearch] = useState('')
   const [method, setMethod] = useState('all')
-  const [recording, setRecording] = useState(false)
   const [voiding, setVoiding] = useState<TeamPayment | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const payments = useTeamPayments(monthRange(month))
@@ -71,7 +70,7 @@ export default function PaymentsPage() {
 
   function exportCsv() {
     downloadCsv(
-      `jhusey-fc-payments-${month}.csv`,
+      `jhusey-fc-fine-payments-${month}.csv`,
       toCsv(rows, [
         { header: 'Member', value: (r) => r.display_name },
         {
@@ -89,32 +88,6 @@ export default function PaymentsPage() {
 
   return (
     <>
-      <PageHeader
-        title="Payments"
-        badges={<Badge tone="blue">{monthLabel(month)}</Badge>}
-        description="Fine payments recorded by the admin. Everyone can see who has paid; payment notes stay with the admin."
-        actions={
-          <>
-            <button
-              type="button"
-              className={secondaryButtonClass}
-              onClick={exportCsv}
-              disabled={rows.length === 0}
-            >
-              <Icon name="download" className="h-4 w-4" /> Export report
-            </button>
-            {isAdmin && (
-              <button
-                type="button"
-                className={`${primaryButtonClass} w-auto`}
-                onClick={() => setRecording(true)}
-              >
-                <Icon name="plus" className="h-4 w-4" /> Record payment
-              </button>
-            )}
-          </>
-        }
-      />
       <FormSuccess message={message} />
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
@@ -155,8 +128,18 @@ export default function PaymentsPage() {
       <Card>
         <div className="space-y-4 border-b border-gray-100 p-5">
           <CardHeader
-            title="Payments ledger"
-            description="Official record of fine payments acknowledged by the admin"
+            title="Fine payments ledger"
+            description="Official record of fine payments acknowledged by the admin. Payment notes stay with the admin."
+            actions={
+              <button
+                type="button"
+                className={secondaryButtonClass}
+                onClick={exportCsv}
+                disabled={rows.length === 0}
+              >
+                <Icon name="download" className="h-4 w-4" /> Export payments
+              </button>
+            }
           />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <SearchInput
@@ -226,17 +209,18 @@ export default function PaymentsPage() {
                       <p className="whitespace-nowrap">{formatNepalDate(at)}</p>
                       <p className="text-[11px] text-gray-400">{formatNepalTime(at)}</p>
                     </Td>
-                    <Td className="hidden text-gray-600 md:table-cell">
+                    <Td label="Covers" className="hidden text-gray-600 md:table-cell">
                       {payment.voided
                         ? '—'
                         : `${payment.fines_count} fine${payment.fines_count === 1 ? '' : 's'}`}
                     </Td>
                     <Td
+                      label="Amount"
                       className={`font-bold whitespace-nowrap ${payment.voided ? 'line-through' : 'text-gray-900'}`}
                     >
                       {formatNpr(payment.amount_npr)}
                     </Td>
-                    <Td className="hidden sm:table-cell">
+                    <Td label="Method" className="hidden sm:table-cell">
                       <p className="text-gray-700">{methodLabel(payment.method)}</p>
                       {isAdmin && extra?.note && (
                         <p className="text-[11px] text-gray-400">{extra.note}</p>
@@ -290,7 +274,6 @@ export default function PaymentsPage() {
         )}
       </Card>
 
-      {recording && <RecordPaymentModal onClose={() => setRecording(false)} onDone={setMessage} />}
       {voiding && (
         <ReasonPrompt
           title={`Void ${formatNpr(voiding.amount_npr)} from ${voiding.display_name}?`}

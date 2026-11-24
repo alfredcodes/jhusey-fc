@@ -12,7 +12,7 @@ import AttendancePage from './attendance/AttendancePage.tsx'
 import FinesPage from './fines/FinesPage.tsx'
 import HistoryPage from './history/HistoryPage.tsx'
 import MembersPage from './members/MembersPage.tsx'
-import PaymentsPage from './payments/PaymentsPage.tsx'
+import FinePayments from './fines/FinePayments.tsx'
 import ReportsPage from './reports/ReportsPage.tsx'
 import SessionsPage from './sessions/SessionsPage.tsx'
 import SettingsPage from './settings/SettingsPage.tsx'
@@ -34,6 +34,10 @@ const rules = {
   late_fine_npr: 50,
   absence_fine_npr: 100,
   absence_fines_from: today,
+  regular_fee_npr: 800,
+  partial_fee_npr: 400,
+  fee_due_days: 16,
+  fine_due_days: null,
   updated_at: '',
   updated_by: null,
 }
@@ -150,12 +154,20 @@ describe('Attendance Record', () => {
 
 // ---------------------------------------------------------------------------
 describe('Fines', () => {
-  const fine = (id: string, name: string, reason: string, amount: number, status: string) => ({
+  const fine = (
+    id: string,
+    name: string,
+    reason: string,
+    amount: number,
+    status: string,
+    due_on: string | null = null,
+  ) => ({
     id,
     member_id: `m-${name.toLowerCase()}`,
     reason,
     amount_npr: amount,
     status,
+    due_on,
     created_at: '2026-11-20T15:00:00Z',
     payment_id: null,
     member: { display_name: name },
@@ -168,6 +180,20 @@ describe('Fines', () => {
       fine('f2', 'Asha', 'absence', 100, 'pending'),
       fine('f3', 'Bikash', 'late', 50, 'paid'),
     ]
+  })
+
+  it('an unpaid fine past its due date shows as Overdue; one still in time shows its due date', async () => {
+    as('member')
+    fake.rows.fines = [
+      fine('f1', 'Asha', 'late', 50, 'pending', addDays(today, -1)),
+      fine('f2', 'Bikash', 'late', 50, 'pending', addDays(today, 3)),
+      fine('f3', 'Chirag', 'late', 50, 'paid', addDays(today, -5)),
+    ]
+    renderWithProviders(<FinesPage />)
+    const table = await screen.findByRole('table')
+    expect(within(table).getAllByText('Overdue')).toHaveLength(1)
+    expect(within(table).getAllByText(/^Due /)).toHaveLength(2) // both unpaid fines show their due date
+    expect(within(table).getByText('Paid')).toBeInTheDocument()
   })
 
   it('members see the whole team’s fines, read-only', async () => {
@@ -214,7 +240,7 @@ describe('Fines', () => {
 })
 
 // ---------------------------------------------------------------------------
-describe('Payments', () => {
+describe('Fine payments', () => {
   beforeEach(() => {
     fake.rows['rpc:team_payments'] = [
       {
@@ -242,7 +268,7 @@ describe('Payments', () => {
 
   it('members see who paid what; voided payments are not counted', async () => {
     as('member')
-    renderWithProviders(<PaymentsPage />)
+    renderWithProviders(<FinePayments />)
     expect(await screen.findByText('Bikash')).toBeInTheDocument()
     expect(screen.getAllByText('Rs. 150').length).toBeGreaterThan(0)
     expect(screen.getByText('Voided')).toBeInTheDocument()
@@ -252,7 +278,7 @@ describe('Payments', () => {
 
   it('the admin voids a payment with a reason', async () => {
     as('admin')
-    renderWithProviders(<PaymentsPage />)
+    renderWithProviders(<FinePayments />)
     const user = userEvent.setup()
     await user.click(await screen.findByRole('button', { name: 'Void' }))
     await user.type(screen.getByLabelText(/Reason/), 'Entered twice')
@@ -294,6 +320,48 @@ describe('Members', () => {
     ]
   })
 
+  it('shows the four member counts and filters: All by default, then Active, Partial, Inactive', async () => {
+    as('member')
+    fake.rows.profiles = [
+      ...(fake.rows.profiles as object[]),
+      {
+        id: 'm-dip',
+        display_name: 'Dip',
+        role: 'member',
+        is_active: true,
+        fee_plan: 'partial',
+        created_at: '2026-11-01T00:00:00Z',
+      },
+      {
+        id: 'm-old',
+        display_name: 'Oldie',
+        role: 'member',
+        is_active: false,
+        fee_plan: 'regular',
+        created_at: '2026-11-01T00:00:00Z',
+      },
+    ]
+    renderWithProviders(<MembersPage />)
+    const table = await screen.findByRole('table')
+    expect(within(table).getByText('Oldie')).toBeInTheDocument() // All shows inactive too
+    const card = (label: string) => screen.getByText(label).closest('div')!.parentElement!
+    expect(within(card('Total members')).getByText('4')).toBeInTheDocument()
+    expect(within(card('Active members')).getByText('3')).toBeInTheDocument()
+    expect(within(card('Partial members')).getByText('1')).toBeInTheDocument()
+    expect(within(card('Inactive members')).getByText('1')).toBeInTheDocument()
+
+    const user = userEvent.setup()
+    const show = screen.getByLabelText('Show')
+    await user.selectOptions(show, 'partial')
+    expect(within(table).getByText('Dip')).toBeInTheDocument()
+    expect(within(table).queryByText('Asha')).not.toBeInTheDocument()
+    await user.selectOptions(show, 'inactive')
+    expect(within(table).getByText('Oldie')).toBeInTheDocument()
+    expect(within(table).queryByText('Dip')).not.toBeInTheDocument()
+    await user.selectOptions(show, 'active')
+    expect(within(table).queryByText('Oldie')).not.toBeInTheDocument()
+  })
+
   it('members see the roster without emails, phones or account controls', async () => {
     as('member')
     renderWithProviders(<MembersPage />)
@@ -307,7 +375,7 @@ describe('Members', () => {
   it('the admin creates a member and sees the initial password once', async () => {
     as('admin')
     vi.mocked(supabase.functions.invoke).mockResolvedValue({
-      data: { member_id: 'new-1', email: 'dip@example.com' },
+      data: { member_id: 'new-1', email: 'dip@members.jhusey-fc.invalid' },
       error: null,
     } as never)
     renderWithProviders(<MembersPage />)
@@ -315,7 +383,7 @@ describe('Members', () => {
     await user.click(await screen.findByRole('button', { name: /Add member/ }))
     const dialog = screen.getByRole('dialog')
     await user.type(within(dialog).getByLabelText('Full name'), 'Dip Shrestha')
-    await user.type(within(dialog).getByLabelText(/Email/), 'dip@example.com')
+    await user.type(within(dialog).getByLabelText(/Username/), 'dip')
     const password = within(dialog).getByLabelText('Initial password')
     await user.clear(password)
     await user.type(password, 'Kick-off-2026')
@@ -325,13 +393,14 @@ describe('Members', () => {
       body: {
         action: 'create',
         display_name: 'Dip Shrestha',
-        email: 'dip@example.com',
+        username: 'dip',
         phone: '',
         password: 'Kick-off-2026',
       },
     })
     expect(await screen.findByText('Share this login with Dip Shrestha')).toBeInTheDocument()
     expect(screen.getByText('Kick-off-2026')).toBeInTheDocument()
+    expect(screen.getByText('dip')).toBeInTheDocument() // the username, not the stored email
     expect(screen.getByText(/shown only now/)).toBeInTheDocument()
   })
 
@@ -340,7 +409,7 @@ describe('Members', () => {
     vi.mocked(supabase.functions.invoke).mockResolvedValue({
       data: null,
       error: new FunctionsHttpError(
-        new Response(JSON.stringify({ error: 'A member with this email already exists.' }), {
+        new Response(JSON.stringify({ error: 'That username is already taken.' }), {
           status: 409,
         }),
       ),
@@ -350,10 +419,10 @@ describe('Members', () => {
     await user.click(await screen.findByRole('button', { name: /Add member/ }))
     const dialog = screen.getByRole('dialog')
     await user.type(within(dialog).getByLabelText('Full name'), 'Asha Again')
-    await user.type(within(dialog).getByLabelText(/Email/), 'asha@example.com')
+    await user.type(within(dialog).getByLabelText(/Username/), 'asha')
     await user.click(within(dialog).getByRole('button', { name: 'Create member' }))
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
-      'A member with this email already exists.',
+      'That username is already taken.',
     )
   })
 
@@ -451,12 +520,13 @@ describe('Reports', () => {
 })
 
 // ---------------------------------------------------------------------------
-describe('Sessions', () => {
+describe('Futsal Games', () => {
   beforeEach(() => {
+    // Two days ahead, so "Can't come" is open whatever time the tests run (deadline 9 PM the day before).
     fake.rows.sessions = [
       {
-        id: 's-tomorrow',
-        session_date: addDays(today, 1),
+        id: 's-next',
+        session_date: addDays(today, 2),
         status: 'scheduled',
         note: null,
         venue: { id: 'v1', name: 'Court' },
@@ -473,34 +543,62 @@ describe('Sessions', () => {
     await user.type(screen.getByLabelText(/Note/), 'Work trip')
     await user.click(screen.getByRole('button', { name: 'Send notice' }))
     expect(supabase.rpc).toHaveBeenCalledWith('notify_absence', {
-      p_session_id: 's-tomorrow',
+      p_session_id: 's-next',
       p_note: 'Work trip',
     })
-    expect(screen.queryByRole('button', { name: 'Create sessions' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Create games' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
   })
 
   it('shows an existing notice with a way to withdraw it', async () => {
     as('member')
     fake.rows.absence_excuses = [
-      { id: 'e1', session_id: 's-tomorrow', source: 'member', created_at: '' },
+      { id: 'e1', session_id: 's-next', source: 'member', created_at: '' },
     ]
     renderWithProviders(<SessionsPage />)
     expect(await screen.findByText('You can’t come'.replace('’', "'"))).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'I can come' })).toBeInTheDocument()
   })
 
-  it('the admin must choose a weekday before creating sessions', async () => {
+  it('shows who is not coming to the next game', async () => {
+    as('member')
+    fake.rows.absence_excuses = [
+      {
+        id: 'e1',
+        session_id: 's-next',
+        member_id: 'm-b',
+        source: 'member',
+        created_at: '',
+        member: { display_name: 'Bikash' },
+      },
+      {
+        id: 'e2',
+        session_id: 's-next',
+        member_id: 'm-c',
+        source: 'admin',
+        created_at: '',
+        member: { display_name: 'Chirag' },
+      },
+    ]
+    renderWithProviders(<SessionsPage />)
+    expect(await screen.findByRole('heading', { name: 'Futsal Games' })).toBeInTheDocument()
+    expect(await screen.findByText('2 not coming')).toBeInTheDocument()
+    expect(screen.getAllByText('Bikash').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Chirag').length).toBeGreaterThan(0)
+    expect(screen.getByText(/before 9 PM on/)).toBeInTheDocument()
+  })
+
+  it('the admin must choose a weekday before creating games', async () => {
     as('admin')
     fake.rows.venues = [{ id: 'v1', name: 'Court', is_active: true }]
     renderWithProviders(<SessionsPage />)
     const user = userEvent.setup()
-    await user.click(await screen.findByRole('button', { name: /Create sessions/ }))
+    await user.click(await screen.findByRole('button', { name: /Create games/ }))
     const dialog = screen.getByRole('dialog')
-    await user.click(within(dialog).getByRole('button', { name: 'Create sessions' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Create games' }))
     expect(within(dialog).getByRole('alert')).toHaveTextContent('Choose at least one weekday.')
     await user.click(within(dialog).getByText('Sun'))
-    await user.click(within(dialog).getByRole('button', { name: 'Create sessions' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Create games' }))
     expect(supabase.rpc).toHaveBeenCalledWith(
       'admin_create_sessions',
       expect.objectContaining({ p_weekdays: [0] }),
@@ -571,6 +669,24 @@ describe('Settings → Rules (admin)', () => {
       p_late_fine_npr: 75,
       p_absence_fine_npr: 100,
       p_absence_fines_from: today,
+    })
+  })
+
+  it('saves fee amounts and payment deadlines; an empty fine deadline means none', async () => {
+    as('admin')
+    renderWithProviders(<SettingsPage />, { path: '/settings?tab=rules' })
+    const user = userEvent.setup()
+    const feeDays = await screen.findByLabelText(/Monthly fee due within/)
+    expect(feeDays).toHaveValue(16)
+    await user.clear(feeDays)
+    await user.type(feeDays, '10')
+    expect(screen.getByLabelText(/Pay fines within/)).toHaveValue(null)
+    await user.click(screen.getByRole('button', { name: 'Save payment settings' }))
+    expect(supabase.rpc).toHaveBeenCalledWith('admin_update_payment_settings', {
+      p_regular_npr: 800,
+      p_partial_npr: 400,
+      p_fee_due_days: 10,
+      p_fine_due_days: null,
     })
   })
 })

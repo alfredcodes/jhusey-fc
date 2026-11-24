@@ -8,17 +8,21 @@ export const labelClass = 'block text-sm font-medium text-gray-700'
 export const primaryButtonClass =
   'inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-600/20 transition-colors hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:outline-none disabled:opacity-60'
 
+/** Primary button that sizes to its content (page/card actions), not to the form width. */
+export const primaryAutoButtonClass =
+  'inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-600/20 transition-colors hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:outline-none disabled:opacity-60'
+
 export const secondaryButtonClass =
   'inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:outline-none disabled:opacity-60'
 
 export const smallButtonClass =
-  'inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:outline-none disabled:opacity-60'
+  'inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors pointer-coarse:py-2 hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:outline-none disabled:opacity-60'
 
 export const linkButtonClass =
-  'inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 disabled:opacity-60'
+  'inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-blue-600 pointer-coarse:px-2.5 pointer-coarse:py-2 transition-colors hover:bg-blue-50 hover:text-blue-700 disabled:opacity-60'
 
 export const dangerLinkButtonClass =
-  'inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-50 disabled:opacity-60'
+  'inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-amber-700 pointer-coarse:px-2.5 pointer-coarse:py-2 transition-colors hover:bg-amber-50 disabled:opacity-60'
 
 export function FormError({ message }: { message: string | null }) {
   if (!message) return null

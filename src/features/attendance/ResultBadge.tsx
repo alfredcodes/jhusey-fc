@@ -1,5 +1,6 @@
 import { Badge, type Tone } from '../../components/ui.tsx'
 import { formatNpr } from '../../lib/format.ts'
+import { fineOverdue } from '../fines/overdue.ts'
 
 export type Result = 'on_time' | 'late' | 'absent' | 'excused' | 'open' | 'cancelled'
 
@@ -42,7 +43,19 @@ export function FineBadge({
   return <Badge tone={reason === 'late' ? 'amber' : 'red'}>{label}</Badge>
 }
 
-export function FineStatusBadge({ status }: { status: string }) {
+export function FineStatusBadge({
+  status,
+  dueOn = null,
+}: {
+  status: string
+  dueOn?: string | null
+}) {
+  if (fineOverdue({ status, due_on: dueOn }))
+    return (
+      <Badge tone="red" dot>
+        Overdue
+      </Badge>
+    )
   if (status === 'paid')
     return (
       <Badge tone="green" dot>

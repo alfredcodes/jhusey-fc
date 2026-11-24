@@ -1,9 +1,10 @@
 import { useMemo, useState, type ReactNode } from 'react'
+import { useSearchParams } from 'react-router'
 import {
   FormError,
   FormSuccess,
   linkButtonClass,
-  primaryButtonClass,
+  primaryAutoButtonClass,
   secondaryButtonClass,
   smallButtonClass,
 } from '../../components/form.tsx'
@@ -17,6 +18,7 @@ import {
   LoadingRows,
   PageHeader,
   SearchInput,
+  Segmented,
   SelectFilter,
   Td,
   Th,
@@ -28,6 +30,7 @@ import { errorMessage } from '../../lib/errors.ts'
 import { formatCalendarDate, formatNepalDate } from '../../lib/nepal-time.ts'
 import { useWaiveFine } from '../admin/queries.ts'
 import { FineStatusBadge } from '../attendance/ResultBadge.tsx'
+import { fineOverdue } from './overdue.ts'
 import {
   currentMonth,
   monthLabel,
@@ -38,10 +41,13 @@ import {
   useIsAdmin,
   type FineListRow,
 } from '../team/queries.ts'
+import FinePayments from './FinePayments.tsx'
 import RecordPaymentModal from './RecordPaymentModal.tsx'
 
 export default function FinesPage() {
   const isAdmin = useIsAdmin()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = searchParams.get('tab') === 'payments' ? 'payments' : 'fines'
   const [month, setMonth] = useState(currentMonth())
   const [search, setSearch] = useState('')
   const [reason, setReason] = useState('all')
@@ -60,7 +66,7 @@ export default function FinesPage() {
         (fine) =>
           (fine.member?.display_name ?? '').toLowerCase().includes(search.trim().toLowerCase()) &&
           (reason === 'all' || fine.reason === reason) &&
-          (status === 'all' || fine.status === status),
+          (status === 'all' || (status === 'overdue' ? fineOverdue(fine) : fine.status === status)),
       ),
     [all, search, reason, status],
   )
@@ -98,18 +104,20 @@ export default function FinesPage() {
         }
         actions={
           <>
-            <button
-              type="button"
-              className={secondaryButtonClass}
-              onClick={exportCsv}
-              disabled={rows.length === 0}
-            >
-              <Icon name="download" className="h-4 w-4" /> Export ledger
-            </button>
+            {tab === 'fines' && (
+              <button
+                type="button"
+                className={secondaryButtonClass}
+                onClick={exportCsv}
+                disabled={rows.length === 0}
+              >
+                <Icon name="download" className="h-4 w-4" /> Export ledger
+              </button>
+            )}
             {isAdmin && (
               <button
                 type="button"
-                className={`${primaryButtonClass} w-auto`}
+                className={primaryAutoButtonClass}
                 onClick={() => setPaying({})}
               >
                 <Icon name="cash" className="h-4 w-4" /> Record payment
@@ -120,196 +128,229 @@ export default function FinesPage() {
       />
       <FormSuccess message={message} />
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-        <SummaryCard
-          tone="amber"
-          icon="clock"
-          label={`Late fines (${monthLabel(month)})`}
-          amount={sum(late)}
-          note={`${late.length} late arrival${late.length === 1 ? '' : 's'} penalised`}
-          tier={rules ? `Standard ${formatNpr(rules.late_fine_npr)} tier` : undefined}
-        />
-        <SummaryCard
-          tone="red"
-          icon="userX"
-          label={`Absence fines (${monthLabel(month)})`}
-          amount={sum(absence)}
-          note={`${absence.length} unexcused absence${absence.length === 1 ? '' : 's'}`}
-          tier={rules ? `Standard ${formatNpr(rules.absence_fine_npr)} tier` : undefined}
-        />
-      </div>
+      <Segmented
+        label="Fines view"
+        value={tab}
+        onChange={(next) => setSearchParams(next === 'payments' ? { tab: next } : {})}
+        options={[
+          { value: 'fines', label: 'Fines' },
+          { value: 'payments', label: 'Fine payments' },
+        ]}
+      />
 
-      <Card className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
-        <SearchInput
-          label="Search members"
-          value={search}
-          onChange={setSearch}
-          placeholder="Search player…"
-        />
-        <label className="block">
-          <span className="sr-only">Month</span>
-          <input
-            type="month"
-            value={month}
-            onChange={(event) => event.target.value && setMonth(event.target.value)}
-            className="block w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
-          />
-        </label>
-        <SelectFilter
-          label="Infraction"
-          value={reason}
-          onChange={setReason}
-          options={[
-            { value: 'all', label: 'All infractions' },
-            { value: 'late', label: 'Late arrival' },
-            { value: 'absence', label: 'Unexcused absence' },
-          ]}
-        />
-        <SelectFilter
-          label="Status"
-          value={status}
-          onChange={setStatus}
-          options={[
-            { value: 'all', label: 'All statuses' },
-            { value: 'pending', label: 'Unpaid' },
-            { value: 'paid', label: 'Paid' },
-            { value: 'waived', label: 'Waived' },
-          ]}
-        />
-      </Card>
-
-      <Card>
-        {fines.isPending && <LoadingRows />}
-        {fines.isError && (
-          <div className="p-5">
-            <FormError message={errorMessage(fines.error)} />
+      {tab === 'payments' ? (
+        <FinePayments />
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <SummaryCard
+              tone="amber"
+              icon="clock"
+              label={`Late fines (${monthLabel(month)})`}
+              amount={sum(late)}
+              note={`${late.length} late arrival${late.length === 1 ? '' : 's'} penalised`}
+              tier={rules ? `Standard ${formatNpr(rules.late_fine_npr)} tier` : undefined}
+            />
+            <SummaryCard
+              tone="red"
+              icon="userX"
+              label={`Absence fines (${monthLabel(month)})`}
+              amount={sum(absence)}
+              note={`${absence.length} unexcused absence${absence.length === 1 ? '' : 's'}`}
+              tier={rules ? `Standard ${formatNpr(rules.absence_fine_npr)} tier` : undefined}
+            />
           </div>
-        )}
-        {fines.data && rows.length === 0 && (
-          <EmptyState
-            icon="receipt"
-            title={all.length ? 'No fines match these filters' : 'No fines this month'}
-          >
-            {all.length === 0 &&
-              'Fines appear here when someone is late or misses a session without notice.'}
-          </EmptyState>
-        )}
-        {rows.length > 0 && (
-          <TableFrame caption={`Fines for ${monthLabel(month)}`}>
-            <thead className="border-b border-gray-100 bg-gray-50/60">
-              <tr>
-                <Th>Member</Th>
-                <Th className="hidden sm:table-cell">Date & session</Th>
-                <Th>Infraction</Th>
-                <Th>Amount</Th>
-                <Th>Status</Th>
-                {isAdmin && <Th align="right">Actions</Th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {rows.map((fine) => (
-                <tr key={fine.id} className="transition-colors hover:bg-gray-50/60">
-                  <Td>
-                    <div className="flex items-center gap-3">
-                      <Avatar name={fine.member?.display_name ?? '?'} />
-                      <div>
-                        <p className="font-semibold text-gray-900">{fine.member?.display_name}</p>
-                        <p className="text-[11px] text-gray-400 sm:hidden">
+
+          <Card className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
+            <SearchInput
+              label="Search members"
+              value={search}
+              onChange={setSearch}
+              placeholder="Search player…"
+            />
+            <label className="block">
+              <span className="sr-only">Month</span>
+              <input
+                type="month"
+                value={month}
+                onChange={(event) => event.target.value && setMonth(event.target.value)}
+                className="block w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+              />
+            </label>
+            <SelectFilter
+              label="Infraction"
+              value={reason}
+              onChange={setReason}
+              options={[
+                { value: 'all', label: 'All infractions' },
+                { value: 'late', label: 'Late arrival' },
+                { value: 'absence', label: 'Unexcused absence' },
+              ]}
+            />
+            <SelectFilter
+              label="Status"
+              value={status}
+              onChange={setStatus}
+              options={[
+                { value: 'all', label: 'All statuses' },
+                { value: 'pending', label: 'Unpaid' },
+                { value: 'overdue', label: 'Overdue' },
+                { value: 'paid', label: 'Paid' },
+                { value: 'waived', label: 'Waived' },
+              ]}
+            />
+          </Card>
+
+          <Card>
+            {fines.isPending && <LoadingRows />}
+            {fines.isError && (
+              <div className="p-5">
+                <FormError message={errorMessage(fines.error)} />
+              </div>
+            )}
+            {fines.data && rows.length === 0 && (
+              <EmptyState
+                icon="receipt"
+                title={all.length ? 'No fines match these filters' : 'No fines this month'}
+              >
+                {all.length === 0 &&
+                  'Fines appear here when someone is late or misses a session without notice.'}
+              </EmptyState>
+            )}
+            {rows.length > 0 && (
+              <TableFrame caption={`Fines for ${monthLabel(month)}`}>
+                <thead className="border-b border-gray-100 bg-gray-50/60">
+                  <tr>
+                    <Th>Member</Th>
+                    <Th className="hidden sm:table-cell">Date & session</Th>
+                    <Th>Infraction</Th>
+                    <Th>Amount</Th>
+                    <Th>Status</Th>
+                    {isAdmin && <Th align="right">Actions</Th>}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {rows.map((fine) => (
+                    <tr key={fine.id} className="transition-colors hover:bg-gray-50/60">
+                      <Td>
+                        <div className="flex items-center gap-3">
+                          <Avatar name={fine.member?.display_name ?? '?'} />
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {fine.member?.display_name}
+                            </p>
+                            <p className="text-[11px] text-gray-400 sm:hidden">
+                              {formatCalendarDate(fine.session.session_date)}
+                            </p>
+                          </div>
+                        </div>
+                      </Td>
+                      <Td className="hidden sm:table-cell">
+                        <p className="text-gray-900">
                           {formatCalendarDate(fine.session.session_date)}
                         </p>
-                      </div>
-                    </div>
-                  </Td>
-                  <Td className="hidden sm:table-cell">
-                    <p className="text-gray-900">{formatCalendarDate(fine.session.session_date)}</p>
-                    <p className="text-[11px] text-gray-400">
-                      Fined {formatNepalDate(new Date(fine.created_at))}
-                    </p>
-                  </Td>
-                  <Td>
-                    {fine.reason === 'late' ? (
-                      <Badge tone="amber">
-                        <Icon name="clock" className="h-3 w-3" /> Late arrival
-                      </Badge>
-                    ) : (
-                      <Badge tone="red">
-                        <Icon name="calendar" className="h-3 w-3" /> Unexcused absence
-                      </Badge>
-                    )}
-                  </Td>
-                  <Td className="font-bold whitespace-nowrap text-gray-900">
-                    {formatNpr(fine.amount_npr)}
-                  </Td>
-                  <Td>
-                    <FineStatusBadge status={fine.status} />
-                  </Td>
-                  {isAdmin && (
-                    <Td align="right">
-                      {fine.status === 'pending' ? (
-                        <div className="flex justify-end gap-1">
-                          <button
-                            type="button"
-                            className={`${linkButtonClass} bg-blue-50`}
-                            onClick={() => setPaying({ memberId: fine.member_id, fineId: fine.id })}
-                          >
-                            Mark paid
-                          </button>
-                          <button
-                            type="button"
-                            className={smallButtonClass}
-                            onClick={() => setWaiving(fine)}
-                          >
-                            Waive
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-300">—</span>
+                        <p className="text-[11px] text-gray-400">
+                          Fined {formatNepalDate(new Date(fine.created_at))}
+                        </p>
+                      </Td>
+                      <Td>
+                        {fine.reason === 'late' ? (
+                          <Badge tone="amber">
+                            <Icon name="clock" className="h-3 w-3" /> Late arrival
+                          </Badge>
+                        ) : (
+                          <Badge tone="red">
+                            <Icon name="calendar" className="h-3 w-3" /> Unexcused absence
+                          </Badge>
+                        )}
+                      </Td>
+                      <Td className="font-bold whitespace-nowrap text-gray-900">
+                        {formatNpr(fine.amount_npr)}
+                      </Td>
+                      <Td>
+                        <FineStatusBadge status={fine.status} dueOn={fine.due_on} />
+                        {fine.status === 'pending' && fine.due_on && (
+                          <p className="mt-1 text-[11px] text-gray-400">
+                            Due {formatCalendarDate(fine.due_on)}
+                          </p>
+                        )}
+                      </Td>
+                      {isAdmin && (
+                        <Td align="right">
+                          {fine.status === 'pending' ? (
+                            <div className="flex justify-end gap-1">
+                              <button
+                                type="button"
+                                className={`${linkButtonClass} bg-blue-50`}
+                                onClick={() =>
+                                  setPaying({ memberId: fine.member_id, fineId: fine.id })
+                                }
+                              >
+                                Mark paid
+                              </button>
+                              <button
+                                type="button"
+                                className={smallButtonClass}
+                                onClick={() => setWaiving(fine)}
+                              >
+                                Waive
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-300">—</span>
+                          )}
+                        </Td>
                       )}
-                    </Td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </TableFrame>
-        )}
-        {all.length > 0 && (
-          <div className="flex flex-col gap-2 border-t border-gray-100 bg-gray-50/40 px-5 py-3 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
-            <span>
-              {rows.length} record{rows.length === 1 ? '' : 's'} shown · Jhusey FC discipline ledger
-            </span>
-            <span className="flex flex-wrap gap-4">
-              <span>
-                Total collected:{' '}
-                <strong className="text-emerald-600">
-                  {formatNpr(sum(all.filter((f) => f.status === 'paid')))}
-                </strong>
-              </span>
-              <span>
-                Total outstanding:{' '}
-                <strong className="text-rose-600">
-                  {formatNpr(sum(all.filter((f) => f.status === 'pending')))}
-                </strong>
-              </span>
-            </span>
-          </div>
-        )}
-      </Card>
+                    </tr>
+                  ))}
+                </tbody>
+              </TableFrame>
+            )}
+            {all.length > 0 && (
+              <div className="flex flex-col gap-2 border-t border-gray-100 bg-gray-50/40 px-5 py-3 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+                <span>
+                  {rows.length} record{rows.length === 1 ? '' : 's'} shown · Jhusey FC discipline
+                  ledger
+                </span>
+                <span className="flex flex-wrap gap-4">
+                  <span>
+                    Total collected:{' '}
+                    <strong className="text-emerald-600">
+                      {formatNpr(sum(all.filter((f) => f.status === 'paid')))}
+                    </strong>
+                  </span>
+                  <span>
+                    Total outstanding:{' '}
+                    <strong className="text-rose-600">
+                      {formatNpr(sum(all.filter((f) => f.status === 'pending')))}
+                    </strong>
+                  </span>
+                </span>
+              </div>
+            )}
+          </Card>
 
-      {rules && (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-          <RuleCard icon="clock" tone="text-amber-500 bg-amber-50" title="Late reporting penalty">
-            Punching in after {timeLabel(rules.on_time_cutoff)} adds a{' '}
-            {formatNpr(rules.late_fine_npr)} fine.
-          </RuleCard>
-          <RuleCard icon="userX" tone="text-rose-500 bg-rose-50" title="Unexcused absence">
-            Missing a session without telling the team by midnight before the session day adds{' '}
-            {formatNpr(rules.absence_fine_npr)}.
-          </RuleCard>
-          <RuleCard icon="card" tone="text-blue-600 bg-blue-50" title="Settlement">
-            Pay the admin in cash, by bank transfer or wallet. The admin records it here and it
-            shows as paid for everyone.
-          </RuleCard>
-        </div>
+          {rules && (
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+              <RuleCard
+                icon="clock"
+                tone="text-amber-500 bg-amber-50"
+                title="Late reporting penalty"
+              >
+                Punching in after {timeLabel(rules.on_time_cutoff)} adds a{' '}
+                {formatNpr(rules.late_fine_npr)} fine.
+              </RuleCard>
+              <RuleCard icon="userX" tone="text-rose-500 bg-rose-50" title="Unexcused absence">
+                Missing a game without telling the team before 9 PM the day before adds{' '}
+                {formatNpr(rules.absence_fine_npr)}.
+              </RuleCard>
+              <RuleCard icon="card" tone="text-blue-600 bg-blue-50" title="Settlement">
+                Pay the admin in cash, by bank transfer or wallet. The admin records it here and it
+                shows as paid for everyone.
+              </RuleCard>
+            </div>
+          )}
+        </>
       )}
 
       {paying && (

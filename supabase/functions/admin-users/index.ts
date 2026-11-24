@@ -1,6 +1,6 @@
 // Admin-only account management. Runs on Supabase Edge Functions (free tier).
 //
-//   POST { action: 'create', email, password, display_name, phone? }
+//   POST { action: 'create', username (or email), password, display_name, phone? }
 //   POST { action: 'reset_password', member_id, password }
 //
 // Why a function: creating users and setting another user's password need the
@@ -19,6 +19,10 @@ const corsHeaders = {
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// Members sign in with a username, stored as <username>@MEMBER_LOGIN_DOMAIN (a reserved,
+// undeliverable domain). Keep in sync with src/lib/login-name.ts.
+const MEMBER_LOGIN_DOMAIN = 'members.jhusey-fc.invalid'
+const USERNAME = /^[a-z0-9][a-z0-9._-]{1,29}$/
 const PHONE = /^\+?[0-9 ]{7,20}$/
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -79,10 +83,25 @@ Deno.serve(async (req) => {
 
   // 2. Create a member with an initial password.
   if (body.action === 'create') {
-    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
+    // A username (preferred) or a real email address.
+    const username =
+      typeof body.username === 'string'
+        ? body.username.trim().toLowerCase().replace(/\s+/g, '')
+        : ''
+    if (username && !USERNAME.test(username)) {
+      return fail(
+        400,
+        'Usernames are 2 to 30 characters: lowercase letters, digits, dot, dash or underscore.',
+      )
+    }
+    const email = username
+      ? `${username}@${MEMBER_LOGIN_DOMAIN}`
+      : typeof body.email === 'string'
+        ? body.email.trim().toLowerCase()
+        : ''
     const name = typeof body.display_name === 'string' ? body.display_name.trim() : ''
     const phone = typeof body.phone === 'string' && body.phone.trim() ? body.phone.trim() : null
-    if (!EMAIL.test(email) || email.length > 254) return fail(400, 'Enter a valid email address.')
+    if (!EMAIL.test(email) || email.length > 254) return fail(400, 'Enter a username.')
     if (name.length < 1 || name.length > 60) return fail(400, 'Enter a name of 1 to 60 characters.')
     if (phone && !PHONE.test(phone)) return fail(400, 'Enter a phone number of 7 to 20 digits.')
     const passwordProblem = checkPassword(body.password)
@@ -96,7 +115,7 @@ Deno.serve(async (req) => {
     })
     if (error || !created.user) {
       const exists = error?.code === 'email_exists' || /already/i.test(error?.message ?? '')
-      if (exists) return fail(409, 'A member with this email already exists.')
+      if (exists) return fail(409, 'That username is already taken.')
       if (error?.code === 'weak_password')
         return fail(400, 'That password is too weak. Try a longer one.')
       return fail(500, 'The account could not be created. Try again.')

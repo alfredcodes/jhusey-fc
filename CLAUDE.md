@@ -25,14 +25,14 @@ Read the relevant files under `docs/` before implementing. `docs/decisions/archi
 
 ## Non-negotiable business rules
 - Timezone: `Asia/Kathmandu`; currency: NPR.
-- Attendance cutoff, punch-in window and fine amounts live in `club_settings` and are admin-editable (2026-11-22). Defaults: on time up to 19:15:00 (whole seconds), window 18:30-21:00, late fine NPR 50, absence fine NPR 100. A change applies only to punch-ins/fines created afterwards; stored statuses and amounts never change.
-- Absence fine: a scheduled session after punch-in closes, with no punch-in and no excuse, gets an absence fine (pg_cron job, only for sessions on/after `absence_fines_from`, never retroactive). Members excuse themselves in the app until midnight before the session day; the admin can excuse later with a reason.
+- Attendance cutoff, punch-in window and fine amounts live in `club_settings` and are admin-editable (2026-11-22), as are monthly fee amounts, the fee due days (default 16) and an optional fine payment deadline (2026-11-23). Defaults: on time up to 19:15:00 (whole seconds), window 18:30-21:00, late fine NPR 50, absence fine NPR 100. A change applies only to punch-ins/fines created afterwards; stored statuses and amounts never change.
+- Absence fine: a scheduled session after punch-in closes, with no punch-in and no excuse, gets an absence fine (pg_cron job, only for sessions on/after `absence_fines_from`, never retroactive). Members excuse themselves in the app until 9 PM Nepal time the day before the game (2026-11-22, was midnight); the admin can excuse later with a reason. Teammates see who is not coming (names only).
 - No paid services: no paid email/SMS/push/maps/APIs. Accounts are created by the admin with an initial password (shown once, never stored by the app); forgotten passwords are reset by the admin.
 - Punch-in uses GPS only. There is no session PIN, QR code, manual code or second verification step.
 - Capture location only when the member taps Punch In. No background or continuous tracking.
 - Store server-generated punch-in time, received coordinates, accuracy, configured venue and server-calculated distance. Do not trust the browser clock or client-calculated attendance status/distance.
 - Members can inspect their own complete punch-in history. Members must not edit attendance, timestamps, GPS, fines or payment records.
-- Team transparency (2026-11-22): active members read the whole team's attendance results, punch-in times, fines, payments (amount, date, method) and reports, read-only. They never see other members' GPS coordinates, distance/accuracy, phone/email, excuse notes, payment notes, the audit log or the Club/Futsal/Rules settings.
+- Team transparency (2026-11-22): active members read the whole team's attendance results, punch-in times, fines, payments (amount, date, method) and reports, read-only. They never see other members' GPS coordinates, distance/accuracy, phone/email, excuse notes, payment notes, payment receipts/submissions, the audit log or the Club/Futsal/Rules settings.
 - One admin account initially. No public admin registration. Do not build multi-admin workflows unless explicitly approved.
 - NPR 200 communication-related penalty is unresolved. Do not implement it until its trigger, evidence, deadline and waiver rules are confirmed.
 - Admin corrections must preserve original attendance evidence and record who changed what, when and why.

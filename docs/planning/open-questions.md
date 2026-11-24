@@ -4,10 +4,11 @@
 2. **GPS accuracy threshold:** starts at 50 m (2026-11-22), admin-editable per venue; confirm after testing phones at the venue.
 3. **Geofence radius:** 100m is provisional. Confirm actual venue coordinates and acceptable radius.
 4. ~~Absence rules~~ **Resolved 2026-11-22:** NPR 100 absence fine (editable) unless excused; from the rule start date only.
-5. ~~Absence notification~~ **Resolved 2026-11-22:** "Can't come" in the app until midnight before the session day; optional note; admin can excuse later.
+5. ~~Absence notification~~ **Resolved 2026-11-22:** "Can't come" in the app until 9 PM the day before the game (changed from midnight, 2026-11-22); optional note; admin can excuse later. Teammates see who is not coming (names only).
 6. **Admin recovery:** who can recover the one admin account if the admin loses access?
 7. ~~Member onboarding~~ **Resolved 2026-11-22 (replaces 2026-11-21):** admin creates the account in the app with an initial password; no email.
-8. **Payment workflow:** accepted methods, evidence, partial payments and whether one payment can cover multiple fines.
+8. ~~Payment evidence~~ **Resolved 2026-11-23 for monthly fees:** members upload a receipt (max 2 MB) or choose cash; the admin approves. Still open: receipt retention (see 11). Was: fine payments resolved by 17, monthly fees by 20. Still open: should members upload payment screenshots (eSewa/Fonepay/Khalti) for the admin to approve, as in the Stitch template? Not built: a member-submitted slip is not proof of payment, and it needs file storage.
+20. ~~Monthly membership fees~~ **Resolved 2026-11-22:** Regular/Partial plans with admin-editable amounts; admin opens each month with an open date; due within 16 days; instalments allowed; admin can exempt with a reason the team can read; no late penalty.
 9. **Session schedule:** exact four weekly days and whether all sessions always share the same 7:15 PM deadline.
 10. **Location privacy:** default since 2026-11-22: team view lists only members who punched in (name + On Time/Late); the admin dashboard also lists who has not. Change on request.
     Original question: whether team-wide attendance view should show only On Time/Late/Absent or also who has not punched in yet.

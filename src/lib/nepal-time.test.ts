@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  absenceNoticeOpen,
   addDays,
   formatCalendarDate,
   formatNepalDate,
@@ -49,5 +50,17 @@ describe('formatNepalDate', () => {
   it('uses the Nepal calendar date, not the UTC date', () => {
     // 20:00 UTC on 21 Nov is already 01:45 on 22 Nov in Kathmandu.
     expect(formatNepalDate(new Date('2026-11-21T20:00:00Z'))).toBe('Sun, 22 Nov 2026')
+  })
+})
+
+describe('absenceNoticeOpen', () => {
+  // Game on 24 Nov: notices close at 21:00 Kathmandu on 23 Nov (= 15:15 UTC).
+  it('is open until 8:59:59 PM Nepal time the day before the game', () => {
+    expect(absenceNoticeOpen('2026-11-24', new Date('2026-11-22T10:00:00Z'))).toBe(true)
+    expect(absenceNoticeOpen('2026-11-24', new Date('2026-11-23T15:14:59Z'))).toBe(true)
+  })
+  it('closes at 9 PM the day before and stays closed on the game day', () => {
+    expect(absenceNoticeOpen('2026-11-24', new Date('2026-11-23T15:15:00Z'))).toBe(false)
+    expect(absenceNoticeOpen('2026-11-24', new Date('2026-11-24T02:00:00Z'))).toBe(false)
   })
 })

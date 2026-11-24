@@ -219,11 +219,15 @@ export type Database = {
           absence_fine_npr: number
           absence_fines_from: string
           club_name: string
+          fee_due_days: number
+          fine_due_days: number | null
           id: boolean
           late_fine_npr: number
           on_time_cutoff: string
+          partial_fee_npr: number
           punch_close: string
           punch_open: string
+          regular_fee_npr: number
           updated_at: string
           updated_by: string | null
         }
@@ -232,11 +236,15 @@ export type Database = {
           absence_fine_npr?: number
           absence_fines_from?: string
           club_name?: string
+          fee_due_days?: number
+          fine_due_days?: number | null
           id?: boolean
           late_fine_npr?: number
           on_time_cutoff?: string
+          partial_fee_npr?: number
           punch_close?: string
           punch_open?: string
+          regular_fee_npr?: number
           updated_at?: string
           updated_by?: string | null
         }
@@ -244,11 +252,15 @@ export type Database = {
           absence_fine_npr?: number
           absence_fines_from?: string
           club_name?: string
+          fee_due_days?: number
+          fine_due_days?: number | null
           id?: boolean
           late_fine_npr?: number
           on_time_cutoff?: string
+          partial_fee_npr?: number
           punch_close?: string
           punch_open?: string
+          regular_fee_npr?: number
           updated_at?: string
           updated_by?: string | null
         }
@@ -262,11 +274,188 @@ export type Database = {
           },
         ]
       }
+      fee_payments: {
+        Row: {
+          amount_npr: number
+          created_at: string
+          id: string
+          member_fee_id: string
+          method: string
+          note: string | null
+          paid_on: string
+          recorded_by: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          amount_npr: number
+          created_at?: string
+          id?: string
+          member_fee_id: string
+          method: string
+          note?: string | null
+          paid_on: string
+          recorded_by: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Update: {
+          amount_npr?: number
+          created_at?: string
+          id?: string
+          member_fee_id?: string
+          method?: string
+          note?: string | null
+          paid_on?: string
+          recorded_by?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fee_payments_member_fee_id_fkey'
+            columns: ['member_fee_id']
+            isOneToOne: false
+            referencedRelation: 'member_fees'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fee_payments_recorded_by_fkey'
+            columns: ['recorded_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fee_payments_voided_by_fkey'
+            columns: ['voided_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      fee_periods: {
+        Row: {
+          created_at: string
+          due_days: number
+          due_on: string | null
+          month: string
+          opened_by: string
+          opened_on: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          due_days: number
+          due_on?: never
+          month: string
+          opened_by: string
+          opened_on: string
+        }
+        Update: {
+          created_at?: string
+          due_days?: number
+          due_on?: never
+          month?: string
+          opened_by?: string
+          opened_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fee_periods_opened_by_fkey'
+            columns: ['opened_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      fee_submissions: {
+        Row: {
+          amount_npr: number
+          created_at: string
+          fee_payment_id: string | null
+          id: string
+          member_fee_id: string
+          member_id: string
+          method: string
+          proof_path: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        ComputedFields: never
+        Insert: {
+          amount_npr: number
+          created_at?: string
+          fee_payment_id?: string | null
+          id?: string
+          member_fee_id: string
+          member_id: string
+          method: string
+          proof_path?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          amount_npr?: number
+          created_at?: string
+          fee_payment_id?: string | null
+          id?: string
+          member_fee_id?: string
+          member_id?: string
+          method?: string
+          proof_path?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fee_submissions_fee_payment_id_fkey'
+            columns: ['fee_payment_id']
+            isOneToOne: false
+            referencedRelation: 'fee_payments'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fee_submissions_member_fee_id_fkey'
+            columns: ['member_fee_id']
+            isOneToOne: false
+            referencedRelation: 'member_fees'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fee_submissions_member_id_fkey'
+            columns: ['member_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fee_submissions_reviewed_by_fkey'
+            columns: ['reviewed_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       fines: {
         Row: {
           amount_npr: number
           attendance_id: string | null
           created_at: string
+          due_on: string | null
           id: string
           member_id: string
           payment_id: string | null
@@ -280,6 +469,7 @@ export type Database = {
           amount_npr: number
           attendance_id?: string | null
           created_at?: string
+          due_on?: string | null
           id?: string
           member_id: string
           payment_id?: string | null
@@ -292,6 +482,7 @@ export type Database = {
           amount_npr?: number
           attendance_id?: string | null
           created_at?: string
+          due_on?: string | null
           id?: string
           member_id?: string
           payment_id?: string | null
@@ -327,6 +518,108 @@ export type Database = {
             columns: ['session_id']
             isOneToOne: false
             referencedRelation: 'sessions'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      member_fees: {
+        Row: {
+          amount_npr: number
+          created_at: string
+          exempt_at: string | null
+          exempt_by: string | null
+          exempt_reason: string | null
+          id: string
+          member_id: string
+          month: string
+          plan: Database['public']['Enums']['fee_plan']
+        }
+        ComputedFields: never
+        Insert: {
+          amount_npr: number
+          created_at?: string
+          exempt_at?: string | null
+          exempt_by?: string | null
+          exempt_reason?: string | null
+          id?: string
+          member_id: string
+          month: string
+          plan: Database['public']['Enums']['fee_plan']
+        }
+        Update: {
+          amount_npr?: number
+          created_at?: string
+          exempt_at?: string | null
+          exempt_by?: string | null
+          exempt_reason?: string | null
+          id?: string
+          member_id?: string
+          month?: string
+          plan?: Database['public']['Enums']['fee_plan']
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'member_fees_exempt_by_fkey'
+            columns: ['exempt_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'member_fees_member_id_fkey'
+            columns: ['member_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'member_fees_month_fkey'
+            columns: ['month']
+            isOneToOne: false
+            referencedRelation: 'fee_periods'
+            referencedColumns: ['month']
+          },
+        ]
+      }
+      member_inactive_periods: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          from_date: string
+          id: string
+          member_id: string
+          to_date: string | null
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          from_date: string
+          id?: string
+          member_id: string
+          to_date?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          from_date?: string
+          id?: string
+          member_id?: string
+          to_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'member_inactive_periods_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'member_inactive_periods_member_id_fkey'
+            columns: ['member_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
         ]
@@ -427,6 +720,7 @@ export type Database = {
         Row: {
           created_at: string
           display_name: string
+          fee_plan: Database['public']['Enums']['fee_plan']
           id: string
           is_active: boolean
           role: Database['public']['Enums']['app_role']
@@ -436,6 +730,7 @@ export type Database = {
         Insert: {
           created_at?: string
           display_name: string
+          fee_plan?: Database['public']['Enums']['fee_plan']
           id: string
           is_active?: boolean
           role?: Database['public']['Enums']['app_role']
@@ -444,6 +739,7 @@ export type Database = {
         Update: {
           created_at?: string
           display_name?: string
+          fee_plan?: Database['public']['Enums']['fee_plan']
           id?: string
           is_active?: boolean
           role?: Database['public']['Enums']['app_role']
@@ -543,6 +839,15 @@ export type Database = {
         }
         Returns: Json
       }
+      absence_notice_open: { Args: { p_now?: string; p_session_date: string }; Returns: boolean }
+      admin_adjust_member_fee: {
+        Args: { p_amount_npr: number; p_member_fee_id: string; p_reason: string }
+        Returns: undefined
+      }
+      admin_change_fee_open_date: {
+        Args: { p_month: string; p_opened_on: string; p_reason: string }
+        Returns: undefined
+      }
       admin_correct_attendance: {
         Args: {
           p_attendance_id: string
@@ -559,6 +864,7 @@ export type Database = {
         Args: { p_member_id: string; p_reason: string; p_session_id: string }
         Returns: undefined
       }
+      admin_exempt_fee: { Args: { p_member_fee_id: string; p_reason: string }; Returns: undefined }
       admin_export_attendance: {
         Args: { p_from: string; p_to: string }
         Returns: {
@@ -602,6 +908,14 @@ export type Database = {
           voided_nepal: string
         }[]
       }
+      admin_fee_payment_notes: {
+        Args: { p_month: string }
+        Returns: {
+          note: string
+          payment_id: string
+          void_reason: string
+        }[]
+      }
       admin_member_accounts: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -612,17 +926,49 @@ export type Database = {
           phone: string
         }[]
       }
+      admin_open_fee_month: { Args: { p_month: string; p_opened_on: string }; Returns: number }
       admin_record_attendance: {
         Args: { p_arrived_at: string; p_member_id: string; p_reason: string; p_session_id: string }
         Returns: Database['public']['Enums']['attendance_status']
+      }
+      admin_record_fee_payment: {
+        Args: {
+          p_amount_npr: number
+          p_member_fee_id: string
+          p_method: string
+          p_note: string
+          p_paid_on: string
+        }
+        Returns: string
       }
       admin_record_payment: {
         Args: { p_fine_ids: string[]; p_member_id: string; p_method: string; p_note: string }
         Returns: string
       }
+      admin_review_fee_submission: {
+        Args: { p_approve: boolean; p_note: string; p_submission_id: string }
+        Returns: undefined
+      }
+      admin_set_fee_plan: {
+        Args: { p_member_id: string; p_plan: Database['public']['Enums']['fee_plan'] }
+        Returns: undefined
+      }
       admin_set_member_phone: { Args: { p_member_id: string; p_phone: string }; Returns: undefined }
+      admin_unexempt_fee: {
+        Args: { p_member_fee_id: string; p_reason: string }
+        Returns: undefined
+      }
       admin_update_member: {
         Args: { p_display_name: string; p_is_active: boolean; p_member_id: string }
+        Returns: undefined
+      }
+      admin_update_payment_settings: {
+        Args: {
+          p_fee_due_days: number
+          p_fine_due_days: number
+          p_partial_npr: number
+          p_regular_npr: number
+        }
         Returns: undefined
       }
       admin_update_rules: {
@@ -637,6 +983,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_void_fee_payment: {
+        Args: { p_payment_id: string; p_reason: string }
+        Returns: undefined
+      }
       admin_void_payment: { Args: { p_payment_id: string; p_reason: string }; Returns: undefined }
       admin_waive_fine: { Args: { p_fine_id: string; p_reason: string }; Returns: undefined }
       attendance_status_for:
@@ -648,14 +998,37 @@ export type Database = {
             Args: { p_at: string; p_cutoff: string; p_session_date: string }
             Returns: Database['public']['Enums']['attendance_status']
           }
+      check_fee_month: { Args: { p_month: string }; Returns: string }
       check_report_range: { Args: { p_from: string; p_to: string }; Returns: undefined }
       distance_m: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number
       }
+      fee_ledger: {
+        Args: { p_month: string }
+        Returns: {
+          amount_npr: number
+          balance_npr: number
+          display_name: string
+          due_on: string
+          exempt_reason: string
+          is_active: boolean
+          last_paid_on: string
+          member_fee_id: string
+          member_id: string
+          paid_npr: number
+          plan: Database['public']['Enums']['fee_plan']
+          status: string
+        }[]
+      }
+      fee_paid_npr: { Args: { p_member_fee_id: string }; Returns: number }
       is_active_member: { Args: Record<PropertyKey, never>; Returns: boolean }
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
       mark_password_changed: { Args: Record<PropertyKey, never>; Returns: undefined }
+      member_counted_on: {
+        Args: { p_date: string; p_joined_at: string; p_member_id: string }
+        Returns: boolean
+      }
       my_session_history: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -690,6 +1063,7 @@ export type Database = {
           amount_npr: number
           attendance_id: string | null
           created_at: string
+          due_on: string | null
           id: string
           member_id: string
           payment_id: string | null
@@ -725,6 +1099,15 @@ export type Database = {
           result: string
           source: Database['public']['Enums']['attendance_source']
         }[]
+      }
+      submit_fee_payment: {
+        Args: {
+          p_amount_npr: number
+          p_member_fee_id: string
+          p_method: string
+          p_proof_path: string
+        }
+        Returns: string
       }
       team_monthly_summary: {
         Args: { p_from: string; p_to: string }
@@ -794,6 +1177,7 @@ export type Database = {
       attendance_source: 'gps' | 'admin'
       attendance_status: 'on_time' | 'late'
       excuse_source: 'member' | 'admin'
+      fee_plan: 'regular' | 'partial'
       fine_status: 'pending' | 'paid' | 'waived'
       session_status: 'scheduled' | 'cancelled'
     }
@@ -914,6 +1298,7 @@ export const Constants = {
       attendance_source: ['gps', 'admin'],
       attendance_status: ['on_time', 'late'],
       excuse_source: ['member', 'admin'],
+      fee_plan: ['regular', 'partial'],
       fine_status: ['pending', 'paid', 'waived'],
       session_status: ['scheduled', 'cancelled'],
     },

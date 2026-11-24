@@ -11,6 +11,7 @@ import {
 import { Icon, type IconName } from '../../components/icons.tsx'
 import { Avatar, Badge, Card, CardHeader, PageHeader } from '../../components/ui.tsx'
 import { errorMessage } from '../../lib/errors.ts'
+import { loginName } from '../../lib/login-name.ts'
 import { nepalToday } from '../../lib/nepal-time.ts'
 import { supabase } from '../../lib/supabase.ts'
 import { useAuth } from '../auth/auth-context.ts'
@@ -23,6 +24,7 @@ import {
   useUpdateRules,
   type ClubRules,
 } from '../team/queries.ts'
+import { useUpdatePaymentSettings } from '../fees/queries.ts'
 import FutsalSettings from './FutsalSettings.tsx'
 import PasswordForm from './PasswordForm.tsx'
 
@@ -60,7 +62,7 @@ export default function SettingsPage() {
       <div
         role="tablist"
         aria-label="Settings sections"
-        className="flex gap-1 overflow-x-auto rounded-2xl border border-gray-100 bg-white p-1.5 shadow-sm"
+        className="flex snap-x gap-1 overflow-x-auto rounded-2xl border border-gray-100 bg-white p-1.5 shadow-sm [scrollbar-width:none] [&>*]:snap-start"
       >
         {tabs.map((tab) => (
           <button
@@ -96,7 +98,12 @@ export default function SettingsPage() {
         )}
         {active === 'club' && isAdmin && <ClubTab />}
         {active === 'futsal' && isAdmin && <FutsalSettings />}
-        {active === 'rules' && isAdmin && <RulesTab />}
+        {active === 'rules' && isAdmin && (
+          <div className="space-y-6">
+            <RulesTab />
+            <FeeAmountsCard />
+          </div>
+        )}
       </div>
     </>
   )
@@ -153,7 +160,7 @@ function ProfileTab() {
               {profile.role === 'admin' ? 'Admin' : 'Member'}
             </Badge>
           </p>
-          <p className="text-sm text-gray-500">{session?.user.email}</p>
+          <p className="text-sm text-gray-500">{loginName(session?.user.email)}</p>
         </div>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -186,8 +193,13 @@ function ProfileTab() {
         </label>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className={labelClass}>
-            Email (sign-in)
-            <input value={session?.user.email ?? ''} disabled className={inputClass} readOnly />
+            Username (sign-in)
+            <input
+              value={loginName(session?.user.email)}
+              disabled
+              className={inputClass}
+              readOnly
+            />
             <span className="mt-1 block text-xs font-normal text-gray-400">
               Ask the admin to change it.
             </span>
@@ -411,8 +423,8 @@ function RulesTab() {
             </label>
           </div>
           <p className="text-xs text-gray-500">
-            Members avoid the absence fine by tapping “Can’t come” before midnight before the
-            session day. The admin can excuse later, with a reason.
+            Members avoid the absence fine by tapping “Can’t come” before 9 PM the day before the
+            game. The admin can excuse later, with a reason.
           </p>
         </fieldset>
 
@@ -427,6 +439,118 @@ function RulesTab() {
           className={`${primaryButtonClass} sm:w-auto`}
         >
           {update.isPending ? 'Saving…' : 'Save rules'}
+        </button>
+      </form>
+    </Card>
+  )
+}
+
+/**
+ * Monthly fee amounts and payment deadlines. Only months opened / fines created afterwards
+ * use the new values; existing due dates never move.
+ */
+function FeeAmountsCard() {
+  const { data: rules } = useClubRules()
+  const update = useUpdatePaymentSettings()
+  const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState<string | null>(null)
+  if (!rules) return null
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    setError(null)
+    setSaved(null)
+    try {
+      await update.mutateAsync({
+        regular: Number(form.get('regular_fee')),
+        partial: Number(form.get('partial_fee')),
+        feeDueDays: Number(form.get('fee_due_days')),
+        fineDueDays: form.get('fine_due_days') ? Number(form.get('fine_due_days')) : null,
+      })
+      setSaved(
+        'Saved. New amounts and deadlines apply to months opened and fines given from now on.',
+      )
+    } catch (caught) {
+      setError(errorMessage(caught))
+    }
+  }
+
+  return (
+    <Card className="max-w-3xl p-6">
+      <CardHeader
+        title="Payments: fees & deadlines"
+        description="Changes apply to months opened and fines given from now on. Existing amounts and due dates never change."
+      />
+      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className={labelClass}>
+            Regular plan (Rs.)
+            <input
+              name="regular_fee"
+              type="number"
+              min={1}
+              max={100000}
+              required
+              defaultValue={rules.regular_fee_npr}
+              className={inputClass}
+            />
+          </label>
+          <label className={labelClass}>
+            Partial plan (Rs.)
+            <input
+              name="partial_fee"
+              type="number"
+              min={1}
+              max={100000}
+              required
+              defaultValue={rules.partial_fee_npr}
+              className={inputClass}
+            />
+          </label>
+          <label className={labelClass}>
+            Monthly fee due within (days)
+            <input
+              name="fee_due_days"
+              type="number"
+              min={1}
+              max={90}
+              required
+              defaultValue={rules.fee_due_days}
+              className={inputClass}
+            />
+            <span className="mt-1 block text-xs font-normal text-gray-400">
+              Counted from the open date you choose for each month.
+            </span>
+          </label>
+          <label className={labelClass}>
+            Pay fines within (days)
+            <input
+              name="fine_due_days"
+              type="number"
+              min={1}
+              max={90}
+              defaultValue={rules.fine_due_days ?? ''}
+              placeholder="No deadline"
+              className={inputClass}
+            />
+            <span className="mt-1 block text-xs font-normal text-gray-400">
+              Counted from the day of the fine. Leave empty for no deadline.
+            </span>
+          </label>
+        </div>
+        <p className="text-xs text-gray-500">
+          Each member’s plan is set on the Members page. Fees may be paid in instalments. A late
+          payment shows as Overdue; there is no extra penalty.
+        </p>
+        <FormError message={error} />
+        <FormSuccess message={saved} />
+        <button
+          type="submit"
+          disabled={update.isPending}
+          className={`${primaryButtonClass} sm:w-auto`}
+        >
+          {update.isPending ? 'Saving…' : 'Save payment settings'}
         </button>
       </form>
     </Card>

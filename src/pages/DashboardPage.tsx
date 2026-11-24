@@ -15,10 +15,9 @@ import {
   StatCard,
 } from '../components/ui.tsx'
 import { formatNpr } from '../lib/format.ts'
-import PunchInCard from '../features/attendance/PunchInCard.tsx'
 import { useProfile } from '../features/auth/use-profile.ts'
-import MemberStats from '../features/history/MemberStats.tsx'
 import NextSessionCard from '../features/sessions/NextSessionCard.tsx'
+import NotComingCard from '../features/sessions/NotComingCard.tsx'
 import { useUpcomingSessions } from '../features/sessions/queries.ts'
 import {
   currentMonth,
@@ -53,13 +52,6 @@ export default function DashboardPage() {
         </span>
       </div>
 
-      {todaySession && (
-        <PunchInCard
-          sessionId={todaySession.id}
-          venueName={todaySession.venue?.name ?? 'the venue'}
-        />
-      )}
-
       <TeamStats todaySessionId={todaySession?.id} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
@@ -71,12 +63,10 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="space-y-3">
-        <h2 className="text-base font-bold tracking-tight text-gray-900">My numbers</h2>
-        <MemberStats />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <NotComingCard />
+        <NextSessionCard />
       </div>
-
-      <NextSessionCard />
     </>
   )
 }
@@ -99,7 +89,7 @@ function TeamStats({ todaySessionId }: { todaySessionId: string | undefined }) {
   const expected = roster.data?.length ?? 0
 
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
       <StatCard
         label="Total members"
         icon="team"

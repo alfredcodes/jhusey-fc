@@ -11,6 +11,18 @@ delete from public.payments;
 delete from public.attendance;
 delete from public.sessions;
 delete from public.venues;
+-- Local fee data (rolled back at the end) would block removing the users below.
+delete from public.fee_submissions;
+delete from public.fee_payments;
+delete from public.member_fees;
+delete from public.fee_periods;
+-- Tests run against the default rules, whatever the local settings are (rolled back at the end).
+update public.club_settings
+set updated_by = null, punch_open = '18:30', on_time_cutoff = '19:15', punch_close = '21:00',
+  late_fine_npr = 50, absence_fine_npr = 100, regular_fee_npr = 800, partial_fee_npr = 400,
+  fee_due_days = 16, fine_due_days = null
+where id;
+delete from public.member_inactive_periods;
 delete from auth.users;
 
 insert into auth.users (id, email, raw_user_meta_data) values

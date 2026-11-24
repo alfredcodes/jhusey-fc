@@ -6,6 +6,7 @@ import {
   inputClass,
   labelClass,
   linkButtonClass,
+  primaryAutoButtonClass,
   primaryButtonClass,
   secondaryButtonClass,
   smallButtonClass,
@@ -25,64 +26,99 @@ import {
 } from '../../components/ui.tsx'
 import { formatNpr } from '../../lib/format.ts'
 import { errorMessage } from '../../lib/errors.ts'
-import { addDays, formatCalendarDate, nepalToday } from '../../lib/nepal-time.ts'
+import { absenceNoticeOpen, addDays, formatCalendarDate, nepalToday } from '../../lib/nepal-time.ts'
 import {
+  currentMonth,
+  monthLabel,
   timeLabel,
   useClubRules,
   useIsAdmin,
   useMyExcuses,
   useNotifyAbsence,
 } from '../team/queries.ts'
+import NotComingCard from './NotComingCard.tsx'
 import {
+  useAbsenceNotices,
   useCreateSessions,
   useDeleteSession,
-  useUpcomingSessions,
+  useSessionsInMonth,
   useUpdateSession,
   useVenues,
+  type AbsenceNotice,
   type SessionRow,
 } from './queries.ts'
 
 // PostgreSQL and JavaScript both number weekdays 0 = Sunday ... 6 = Saturday.
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
 
+/** Futsal games (sessions) month by month, with who is not coming to each one. */
 export default function SessionsPage() {
   const isAdmin = useIsAdmin()
-  const sessions = useUpcomingSessions(90)
+  const [month, setMonth] = useState(currentMonth())
+  const sessions = useSessionsInMonth(month)
+  const notices = useAbsenceNotices(sessions.data?.map((session) => session.id) ?? [])
   const { data: rules } = useClubRules()
   const [creating, setCreating] = useState(false)
-  const scheduled = sessions.data?.filter((session) => session.status === 'scheduled').length ?? 0
+  const today = nepalToday()
+  const scheduled = sessions.data?.filter((session) => session.status === 'scheduled') ?? []
+  const upcoming = scheduled.filter((session) => session.session_date >= today).length
+  const byGame = new Map<string, AbsenceNotice[]>()
+  for (const notice of notices.data ?? []) {
+    byGame.set(notice.session_id, [...(byGame.get(notice.session_id) ?? []), notice])
+  }
 
   return (
     <>
       <PageHeader
-        title="Sessions"
-        badges={<Badge tone="blue">{scheduled} upcoming</Badge>}
+        title="Futsal Games"
+        badges={
+          <>
+            <Badge tone="blue">{monthLabel(month)}</Badge>
+            <Badge tone="green">{upcoming} upcoming</Badge>
+          </>
+        }
         description={
-          rules
-            ? `Punch-in ${timeLabel(rules.punch_open)} – ${timeLabel(rules.punch_close)} · on time until ${timeLabel(rules.on_time_cutoff)} · can't come? Tell the team by midnight before the session day.`
-            : undefined
+          rules ? (
+            <span className="block truncate text-xs">
+              Punch in {timeLabel(rules.punch_open)} – {timeLabel(rules.punch_close)} · on time by{' '}
+              {timeLabel(rules.on_time_cutoff)} · notice by 9 PM the day before
+            </span>
+          ) : undefined
         }
         actions={
           isAdmin && (
             <button
               type="button"
-              className={`${primaryButtonClass} w-auto`}
+              className={primaryAutoButtonClass}
               onClick={() => setCreating(true)}
             >
-              <Icon name="plus" className="h-4 w-4" /> Create sessions
+              <Icon name="plus" className="h-4 w-4" /> Create games
             </button>
           )
         }
       />
 
+      <NotComingCard />
+
       <Card>
         <div className="border-b border-gray-100 p-5">
           <CardHeader
-            title="Upcoming sessions"
+            title={`Games in ${monthLabel(month)}`}
             description={
               isAdmin
-                ? 'Cancel a session to keep its history; delete only sessions created by mistake.'
-                : `Without a notice, missing a session costs ${rules ? formatNpr(rules.absence_fine_npr) : 'a fine'}.`
+                ? `${scheduled.length} scheduled`
+                : `${scheduled.length} scheduled${rules ? ` · ${formatNpr(rules.absence_fine_npr)} if absent without notice` : ''}`
+            }
+            actions={
+              <label className="block">
+                <span className="sr-only">Month</span>
+                <input
+                  type="month"
+                  value={month}
+                  onChange={(event) => event.target.value && setMonth(event.target.value)}
+                  className="block w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                />
+              </label>
             }
           />
         </div>
@@ -93,25 +129,29 @@ export default function SessionsPage() {
           </div>
         )}
         {sessions.data?.length === 0 && (
-          <EmptyState icon="calendar" title="No upcoming sessions">
-            {isAdmin
-              ? 'Create sessions for the coming weeks.'
-              : 'The admin has not scheduled any yet.'}
+          <EmptyState icon="calendar" title={`No games in ${monthLabel(month)}`}>
+            {isAdmin ? 'Create games for the coming weeks.' : 'The admin has not scheduled any.'}
           </EmptyState>
         )}
         {sessions.data && sessions.data.length > 0 && (
-          <TableFrame caption="Upcoming sessions">
+          <TableFrame caption={`Games in ${monthLabel(month)}`}>
             <thead className="border-b border-gray-100 bg-gray-50/60">
               <tr>
                 <Th>Date</Th>
                 <Th className="hidden sm:table-cell">Venue</Th>
                 <Th>Status</Th>
+                <Th>Not coming</Th>
                 <Th align="right">Actions</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {sessions.data.map((session) => (
-                <SessionRowItem key={session.id} session={session} isAdmin={isAdmin} />
+                <SessionRowItem
+                  key={session.id}
+                  session={session}
+                  isAdmin={isAdmin}
+                  notComing={byGame.get(session.id) ?? []}
+                />
               ))}
             </tbody>
           </TableFrame>
@@ -123,7 +163,15 @@ export default function SessionsPage() {
   )
 }
 
-function SessionRowItem({ session, isAdmin }: { session: SessionRow; isAdmin: boolean }) {
+function SessionRowItem({
+  session,
+  isAdmin,
+  notComing,
+}: {
+  session: SessionRow
+  isAdmin: boolean
+  notComing: AbsenceNotice[]
+}) {
   const update = useUpdateSession()
   const remove = useDeleteSession()
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -131,6 +179,7 @@ function SessionRowItem({ session, isAdmin }: { session: SessionRow; isAdmin: bo
   const busy = update.isPending || remove.isPending
   const cancelled = session.status === 'cancelled'
   const isToday = session.session_date === nepalToday()
+  const isPast = session.session_date < nepalToday()
 
   async function run(action: () => Promise<unknown>) {
     setError(null)
@@ -165,10 +214,24 @@ function SessionRowItem({ session, isAdmin }: { session: SessionRow; isAdmin: bo
           </Badge>
         )}
       </Td>
+      <Td label="Not coming">
+        {notComing.length === 0 ? (
+          <span className="text-xs text-gray-300">—</span>
+        ) : (
+          <div className="flex max-w-64 flex-wrap gap-1">
+            {notComing.map((notice) => (
+              <Badge key={notice.id} tone={notice.source === 'admin' ? 'purple' : 'red'}>
+                {notice.member?.display_name}
+              </Badge>
+            ))}
+          </div>
+        )}
+      </Td>
       <Td align="right">
         <div className="flex flex-wrap items-center justify-end gap-1.5">
           {!cancelled && <CantComeButton session={session} />}
           {isAdmin &&
+            !isPast &&
             (confirmDelete ? (
               <>
                 <button
@@ -221,7 +284,7 @@ function SessionRowItem({ session, isAdmin }: { session: SessionRow; isAdmin: bo
 }
 
 /**
- * "I can't come" for a future session (deadline: midnight before the session day),
+ * "I can't come" for a future game (deadline: 9 PM Nepal time the day before the game),
  * or "I can come after all" to withdraw it. The database enforces the deadline.
  */
 export function CantComeButton({ session }: { session: Pick<SessionRow, 'id' | 'session_date'> }) {
@@ -230,7 +293,7 @@ export function CantComeButton({ session }: { session: Pick<SessionRow, 'id' | '
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const mine = excuses.data?.find((excuse) => excuse.session_id === session.id)
-  const beforeDeadline = session.session_date > nepalToday()
+  const beforeDeadline = absenceNoticeOpen(session.session_date)
 
   if (mine) {
     return (
@@ -279,7 +342,7 @@ export function CantComeButton({ session }: { session: Pick<SessionRow, 'id' | '
       {open && (
         <Modal
           title="Tell the team you can’t come"
-          description={`${formatCalendarDate(session.session_date)}. Telling the team before midnight today means no absence fine.`}
+          description={`${formatCalendarDate(session.session_date)}. Telling the team before 9 PM on ${formatCalendarDate(addDays(session.session_date, -1))} means no absence fine.`}
           onClose={() => setOpen(false)}
         >
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -341,8 +404,8 @@ function CreateSessionsModal({ onClose }: { onClose: () => void }) {
       })
       setResult(
         created === 0
-          ? 'No new sessions: every matching date already had one.'
-          : `Created ${created} session${created === 1 ? '' : 's'}. Dates that already had a session were skipped.`,
+          ? 'No new games: every matching date already had one.'
+          : `Created ${created} game${created === 1 ? '' : 's'}. Dates that already had a game were skipped.`,
       )
     } catch (caught) {
       setError(errorMessage(caught))
@@ -350,7 +413,7 @@ function CreateSessionsModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Modal title="Create sessions" description="Repeat on chosen weekdays." onClose={onClose}>
+    <Modal title="Create games" description="Repeat on chosen weekdays." onClose={onClose}>
       {venues.isSuccess && activeVenues.length === 0 ? (
         <p className="text-sm text-gray-600">
           Add a venue first in{' '}
@@ -424,7 +487,7 @@ function CreateSessionsModal({ onClose }: { onClose: () => void }) {
           <FormError message={error} />
           <FormSuccess message={result} />
           <button type="submit" disabled={create.isPending} className={primaryButtonClass}>
-            {create.isPending ? 'Creating…' : 'Create sessions'}
+            {create.isPending ? 'Creating…' : 'Create games'}
           </button>
         </form>
       )}

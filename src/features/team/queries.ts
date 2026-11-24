@@ -79,7 +79,7 @@ export function useTeamMembers() {
       rows(
         supabase
           .from('profiles')
-          .select('id, display_name, role, is_active, created_at')
+          .select('id, display_name, role, is_active, fee_plan, created_at')
           .order('display_name'),
       ),
   })
@@ -153,7 +153,7 @@ export function useFines(range: Range) {
         supabase
           .from('fines')
           .select(
-            'id, member_id, reason, amount_npr, status, created_at, payment_id, member:profiles(display_name), session:sessions!inner(id, session_date)',
+            'id, member_id, reason, amount_npr, status, due_on, created_at, payment_id, member:profiles(display_name), session:sessions!inner(id, session_date)',
           )
           .gte('session.session_date', range.from)
           .lte('session.session_date', range.to)

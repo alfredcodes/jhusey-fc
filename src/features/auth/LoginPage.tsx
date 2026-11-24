@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router'
 import AuthCard from '../../components/AuthCard.tsx'
 import { FormError, inputClass, labelClass, primaryButtonClass } from '../../components/form.tsx'
+import { toLoginEmail } from '../../lib/login-name.ts'
 import { supabase } from '../../lib/supabase.ts'
 import { useAuth } from './auth-context.ts'
 
@@ -23,16 +24,16 @@ export default function LoginPage() {
     setError(null)
 
     const { error } = await supabase.auth.signInWithPassword({
-      email: String(form.get('email')).trim(),
+      email: toLoginEmail(String(form.get('login'))),
       password: String(form.get('password')),
     })
 
     setSubmitting(false)
     if (error) {
-      // Same message for unknown email and wrong password: do not reveal which accounts exist.
+      // Same message for unknown username and wrong password: do not reveal which accounts exist.
       setError(
         error.code === 'invalid_credentials'
-          ? 'Email or password is incorrect.'
+          ? 'Username or password is incorrect.'
           : 'Sign-in failed. Please try again in a moment.',
       )
       return
@@ -44,8 +45,19 @@ export default function LoginPage() {
     <AuthCard title="Sign in" subtitle="Welcome back to the squad.">
       <form onSubmit={handleSubmit} className="space-y-4">
         <label className={labelClass}>
-          Email
-          <input name="email" type="email" autoComplete="email" required className={inputClass} />
+          Username
+          <input
+            name="login"
+            type="text"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            required
+            className={inputClass}
+          />
+          <span className="mt-1 block text-xs font-normal text-gray-400">
+            The username the admin gave you (or your email, if you sign in with one).
+          </span>
         </label>
         <label className={labelClass}>
           Password

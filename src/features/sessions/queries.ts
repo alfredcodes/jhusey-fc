@@ -74,6 +74,49 @@ export function useUpcomingSessions(limit = 60) {
   })
 }
 
+/** Every game (session) in a month, "YYYY-MM", in date order. */
+export function useSessionsInMonth(month: string) {
+  return useQuery({
+    queryKey: [...keys.sessions, 'month', month],
+    queryFn: async (): Promise<SessionRow[]> => {
+      const [year, m] = month.split('-').map(Number)
+      const last = new Date(Date.UTC(year, m, 0)).getUTCDate()
+      const { data, error } = await supabase
+        .from('sessions')
+        .select(sessionColumns)
+        .gte('session_date', `${month}-01`)
+        .lte('session_date', `${month}-${String(last).padStart(2, '0')}`)
+        .order('session_date')
+      if (error) throw error
+      return data
+    },
+  })
+}
+
+/**
+ * Who said they cannot come (or was excused by the admin), per game. Names only: the
+ * note is not readable here (column grant), it stays with the member and the admin.
+ */
+export function useAbsenceNotices(sessionIds: string[]) {
+  return useQuery({
+    queryKey: ['excuses', 'sessions', sessionIds],
+    enabled: sessionIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('absence_excuses')
+        .select(
+          'id, session_id, member_id, source, created_at, member:profiles!absence_excuses_member_id_fkey(display_name)',
+        )
+        .in('session_id', sessionIds)
+        .order('created_at')
+      if (error) throw error
+      return data
+    },
+  })
+}
+
+export type AbsenceNotice = NonNullable<ReturnType<typeof useAbsenceNotices>['data']>[number]
+
 export function useCreateSessions() {
   const queryClient = useQueryClient()
   return useMutation({

@@ -106,6 +106,12 @@ The trusted punch-in function must supply validated values. Do not allow members
 - `confirmed_at timestamptz null`
 - `created_at timestamptz not null default now()`
 
+### member_inactive_periods (2026-11-24)
+- `member_id`, `from_date` (deactivation day), `to_date` (day before reactivation; null = still inactive)
+- One open period per member. Written only by `admin_update_member`; admin read-only via RLS.
+- `member_counted_on(member, joined_at, date)` is used by team_report, team_monthly_summary,
+  session_roster, my_session_history and the absence-fine job.
+
 ### Remaining tables
 Add `absence_notifications`, `announcements`, `notifications` and `audit_logs` only when their first-release workflows are defined. Avoid speculative tables with no implemented use case.
 

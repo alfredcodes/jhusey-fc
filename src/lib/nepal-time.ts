@@ -69,3 +69,22 @@ export function formatCalendarDate(isoDate: string): string {
   const [year, month, day] = isoDate.split('-').map(Number)
   return sessionDateFormatter.format(new Date(Date.UTC(year, month - 1, day)))
 }
+
+const clockFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: NEPAL_TIME_ZONE,
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+})
+
+/** "Can't come" closes at this Nepal time on the day before the game. The database enforces it. */
+export const ABSENCE_NOTICE_CUTOFF = '21:00:00'
+
+/** Whether members may still give or withdraw a "Can't come" notice. UI hint only. */
+export function absenceNoticeOpen(sessionDate: string, instant: Date = new Date()): boolean {
+  const today = nepalToday(instant)
+  const dayBefore = addDays(sessionDate, -1)
+  if (today < dayBefore) return true
+  return today === dayBefore && clockFormatter.format(instant) < ABSENCE_NOTICE_CUTOFF
+}

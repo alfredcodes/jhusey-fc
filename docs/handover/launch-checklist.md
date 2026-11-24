@@ -11,7 +11,7 @@ Location, e.g. `27.7202, 85.3408` (about 40 m from the venue).
 
 ### Accounts
 - [ ] Admin adds a member → login shown once → member signs in → must choose a new password → dashboard.
-- [ ] Same email a second time is refused. Members → Reset password → temporary password works once, then must change.
+- [ ] Member signs in with their username (not an email). The same username a second time is refused. Members → Reset password → temporary password works once, then must change.
 - [ ] Settings → Security: change password (wrong current password refused).
 - [ ] Wrong password shows one generic message.
 - [ ] Forgot password page says to ask the admin.

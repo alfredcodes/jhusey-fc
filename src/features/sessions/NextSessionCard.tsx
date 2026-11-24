@@ -16,14 +16,14 @@ export default function NextSessionCard() {
   return (
     <Card className="p-5 sm:p-6">
       <CardHeader
-        title="Upcoming sessions"
+        title="Upcoming games"
         description={rules && `On time until ${timeLabel(rules.on_time_cutoff)} Nepal time`}
         actions={
           <Link
-            to="/sessions"
+            to="/games"
             className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
           >
-            All sessions <Icon name="chevronRight" className="h-3.5 w-3.5" />
+            All games <Icon name="chevronRight" className="h-3.5 w-3.5" />
           </Link>
         }
       />
@@ -31,7 +31,7 @@ export default function NextSessionCard() {
         {sessions.isPending && <LoadingRows rows={3} />}
         {sessions.isError && <FormError message={errorMessage(sessions.error)} />}
         {sessions.data?.length === 0 && (
-          <p className="text-sm text-gray-500">No sessions scheduled yet.</p>
+          <p className="text-sm text-gray-500">No games scheduled yet.</p>
         )}
         <ul className="divide-y divide-gray-50">
           {sessions.data?.slice(0, 5).map((session) => {

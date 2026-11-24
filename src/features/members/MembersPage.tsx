@@ -5,6 +5,7 @@ import {
   inputClass,
   labelClass,
   linkButtonClass,
+  primaryAutoButtonClass,
   primaryButtonClass,
   secondaryButtonClass,
 } from '../../components/form.tsx'
@@ -28,6 +29,7 @@ import {
 import { formatNpr } from '../../lib/format.ts'
 import { downloadCsv, toCsv } from '../../lib/csv.ts'
 import { errorMessage } from '../../lib/errors.ts'
+import { loginName } from '../../lib/login-name.ts'
 import { addDays, formatNepalDate, nepalToday } from '../../lib/nepal-time.ts'
 import { useProfile } from '../auth/use-profile.ts'
 import {
@@ -38,6 +40,7 @@ import {
   useUpdateMember,
   type MemberAccount,
 } from '../admin/queries.ts'
+import { FEE_PLANS, planLabel, useSetFeePlan, type FeePlan } from '../fees/queries.ts'
 import { useIsAdmin, useTeamMembers, useTeamReport, type TeamMember } from '../team/queries.ts'
 
 type Row = TeamMember & {
@@ -48,6 +51,23 @@ type Row = TeamMember & {
   account?: MemberAccount
 }
 
+type MemberFilter = 'all' | 'active' | 'partial' | 'inactive'
+
+const MEMBER_FILTERS: { value: MemberFilter; label: string }[] = [
+  { value: 'all', label: 'All members' },
+  { value: 'active', label: 'Active' },
+  { value: 'partial', label: 'Partial plan' },
+  { value: 'inactive', label: 'Inactive' },
+]
+
+/** Active / Inactive = account status; Partial = on the partial fee plan (active or not). */
+function matchesFilter(row: { is_active: boolean; fee_plan: string }, filter: MemberFilter) {
+  if (filter === 'active') return row.is_active
+  if (filter === 'inactive') return !row.is_active
+  if (filter === 'partial') return row.fee_plan === 'partial'
+  return true
+}
+
 export default function MembersPage() {
   const isAdmin = useIsAdmin()
   const today = nepalToday()
@@ -55,7 +75,7 @@ export default function MembersPage() {
   const report = useTeamReport({ from: addDays(today, -365), to: today })
   const accounts = useMemberAccounts(isAdmin)
   const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('active')
+  const [status, setStatus] = useState<MemberFilter>('all')
   const [sort, setSort] = useState('name')
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<Row | null>(null)
@@ -82,7 +102,7 @@ export default function MembersPage() {
     const filtered = all.filter(
       (row) =>
         row.display_name.toLowerCase().includes(search.trim().toLowerCase()) &&
-        (status === 'all' || (status === 'active') === row.is_active),
+        matchesFilter(row, status),
     )
     const by: Record<string, (a: Row, b: Row) => number> = {
       name: (a, b) => a.display_name.localeCompare(b.display_name),
@@ -92,12 +112,7 @@ export default function MembersPage() {
     return filtered.sort(by[sort])
   }, [all, search, status, sort])
 
-  const active = all.filter((row) => row.is_active)
-  const withStats = active.filter((row) => row.percent !== null)
-  const average = withStats.length
-    ? Math.round(withStats.reduce((sum, row) => sum + (row.percent ?? 0), 0) / withStats.length)
-    : null
-  const owing = active.filter((row) => row.due > 0).length
+  const count = (filter: MemberFilter) => all.filter((row) => matchesFilter(row, filter)).length
 
   function exportCsv() {
     downloadCsv(
@@ -106,6 +121,7 @@ export default function MembersPage() {
         { header: 'Member', value: (r) => r.display_name },
         { header: 'Role', value: (r) => r.role },
         { header: 'Active', value: (r) => (r.is_active ? 'yes' : 'no') },
+        { header: 'Fee plan', value: (r) => planLabel(r.fee_plan) },
         { header: 'Sessions (12 months)', value: (r) => r.sessions },
         { header: 'Attended', value: (r) => r.attended },
         { header: 'Attendance %', value: (r) => r.percent },
@@ -133,7 +149,7 @@ export default function MembersPage() {
             {isAdmin && (
               <button
                 type="button"
-                className={`${primaryButtonClass} w-auto`}
+                className={primaryAutoButtonClass}
                 onClick={() => setAdding(true)}
               >
                 <Icon name="plus" className="h-4 w-4" /> Add member
@@ -146,32 +162,32 @@ export default function MembersPage() {
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          label="Total roster"
+          label="Total members"
           icon="team"
           tone="blue"
-          value={active.length}
-          unit={`active of ${all.length}`}
+          value={members.data ? all.length : '–'}
+          unit="on the roster"
         />
         <StatCard
-          label="Avg attendance"
+          label="Active members"
           icon="checkCircle"
           tone="green"
-          value={average === null ? '–' : `${average}%`}
-          unit="12 months"
+          value={members.data ? count('active') : '–'}
+          unit="can sign in"
         />
         <StatCard
-          label="Members owing"
-          icon="receipt"
+          label="Partial members"
+          icon="users"
           tone="amber"
-          value={owing}
-          unit="with fines due"
+          value={members.data ? count('partial') : '–'}
+          unit="partial fee plan"
         />
         <StatCard
-          label="Administrators"
-          icon="shield"
-          tone="purple"
-          value={all.filter((r) => r.role === 'admin').length}
-          unit="Captain & admin"
+          label="Inactive members"
+          icon="userX"
+          tone="gray"
+          value={members.data ? count('inactive') : '–'}
+          unit="history kept"
         />
       </div>
 
@@ -185,14 +201,10 @@ export default function MembersPage() {
           />
           <div className="grid grid-cols-2 gap-2 sm:flex">
             <SelectFilter
-              label="Status"
+              label="Show"
               value={status}
-              onChange={setStatus}
-              options={[
-                { value: 'active', label: 'Active' },
-                { value: 'inactive', label: 'Inactive' },
-                { value: 'all', label: 'All statuses' },
-              ]}
+              onChange={(value) => setStatus(value as MemberFilter)}
+              options={MEMBER_FILTERS}
             />
             <SelectFilter
               label="Sort"
@@ -243,21 +255,22 @@ export default function MembersPage() {
                           )}
                         </p>
                         <p className="text-[11px] text-gray-400">
-                          Joined {formatNepalDate(new Date(row.created_at))}
+                          {planLabel(row.fee_plan)} plan · Joined{' '}
+                          {formatNepalDate(new Date(row.created_at))}
                         </p>
                       </div>
                     </div>
                   </Td>
                   {isAdmin && (
                     <Td className="hidden lg:table-cell">
-                      <p className="text-gray-700">{row.account?.email}</p>
+                      <p className="text-gray-700">{loginName(row.account?.email)}</p>
                       <p className="text-[11px] text-gray-400">
                         {row.account?.phone ?? 'No phone'}
                         {row.account?.must_change_password && ' · must change password'}
                       </p>
                     </Td>
                   )}
-                  <Td>
+                  <Td label="Attendance (12 months)">
                     <div className="flex items-center gap-2.5">
                       <PercentBar
                         percent={row.percent}
@@ -271,7 +284,7 @@ export default function MembersPage() {
                       </span>
                     </div>
                   </Td>
-                  <Td className="hidden sm:table-cell">
+                  <Td label="Fines due" className="hidden sm:table-cell">
                     {row.due > 0 ? (
                       <span className="font-semibold text-rose-600">{formatNpr(row.due)}</span>
                     ) : (
@@ -334,18 +347,20 @@ export default function MembersPage() {
 
 /** The password is shown once, here, and never stored by the app. */
 function CredentialsPanel({
-  email,
+  username,
   password,
   name,
 }: {
-  email: string
+  username: string
   password: string
   name: string
 }) {
   const [copied, setCopied] = useState(false)
   async function copy() {
     try {
-      await navigator.clipboard.writeText(`Jhusey FC login\nEmail: ${email}\nPassword: ${password}`)
+      await navigator.clipboard.writeText(
+        `Jhusey FC login\nUsername: ${username}\nPassword: ${password}`,
+      )
       setCopied(true)
     } catch {
       setCopied(false)
@@ -357,8 +372,8 @@ function CredentialsPanel({
         <p className="font-semibold text-emerald-800">Share this login with {name}</p>
         <dl className="mt-2 space-y-1 text-gray-800">
           <div className="flex gap-2">
-            <dt className="w-20 text-gray-500">Email</dt>
-            <dd className="font-mono break-all">{email}</dd>
+            <dt className="w-20 text-gray-500">Username</dt>
+            <dd className="font-mono break-all">{username}</dd>
           </div>
           <div className="flex gap-2">
             <dt className="w-20 text-gray-500">Password</dt>
@@ -412,7 +427,9 @@ function AddMemberModal({ onClose }: { onClose: () => void }) {
   const create = useCreateMember()
   const [password, setPassword] = useState(() => generatePassword())
   const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState<{ email: string; name: string; password: string } | null>(null)
+  const [done, setDone] = useState<{ username: string; name: string; password: string } | null>(
+    null,
+  )
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -422,11 +439,11 @@ function AddMemberModal({ onClose }: { onClose: () => void }) {
     try {
       const result = await create.mutateAsync({
         displayName: name,
-        email: String(form.get('email')).trim(),
+        username: String(form.get('username')).trim(),
         phone: String(form.get('phone')).trim(),
         password,
       })
-      setDone({ email: result.email ?? String(form.get('email')), name, password })
+      setDone({ username: loginName(result.email), name, password })
     } catch (caught) {
       setError(errorMessage(caught))
     }
@@ -442,7 +459,7 @@ function AddMemberModal({ onClose }: { onClose: () => void }) {
     >
       {done ? (
         <div className="space-y-4">
-          <CredentialsPanel email={done.email} password={done.password} name={done.name} />
+          <CredentialsPanel username={done.username} password={done.password} name={done.name} />
           <button type="button" className={primaryButtonClass} onClick={onClose}>
             Done
           </button>
@@ -454,14 +471,19 @@ function AddMemberModal({ onClose }: { onClose: () => void }) {
             <input name="name" required maxLength={60} className={inputClass} autoComplete="off" />
           </label>
           <label className={labelClass}>
-            Email (used to sign in)
+            Username (used to sign in)
             <input
-              name="email"
-              type="email"
+              name="username"
               required
-              maxLength={254}
+              minLength={2}
+              maxLength={30}
+              pattern="[a-z0-9][a-z0-9._\-]{1,29}"
+              title="2 to 30 lowercase letters, digits, dot, dash or underscore"
+              autoCapitalize="none"
+              spellCheck={false}
               className={inputClass}
               autoComplete="off"
+              placeholder="e.g. kamal or 9841234567"
             />
           </label>
           <label className={labelClass}>
@@ -501,6 +523,7 @@ function EditMemberModal({
   onDone: (message: string) => void
 }) {
   const update = useUpdateMember()
+  const setPlan = useSetFeePlan()
   const { data: me } = useProfile()
   const [error, setError] = useState<string | null>(null)
   const isMe = me?.id === member.id
@@ -517,6 +540,8 @@ function EditMemberModal({
         isActive: isMe || form.get('active') === 'on',
         phone: String(form.get('phone')).trim(),
       })
+      const plan = String(form.get('plan')) as FeePlan
+      if (plan !== member.fee_plan) await setPlan.mutateAsync({ memberId: member.id, plan })
       onDone(`${name} saved.`)
     } catch (caught) {
       setError(errorMessage(caught))
@@ -526,7 +551,7 @@ function EditMemberModal({
   return (
     <Modal
       title={`Edit ${member.display_name}`}
-      description={member.account?.email}
+      description={loginName(member.account?.email)}
       onClose={onClose}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -551,6 +576,19 @@ function EditMemberModal({
             className={inputClass}
           />
         </label>
+        <label className={labelClass}>
+          Monthly fee plan
+          <select name="plan" defaultValue={member.fee_plan} className={inputClass}>
+            {FEE_PLANS.map((plan) => (
+              <option key={plan.value} value={plan.value}>
+                {plan.label}
+              </option>
+            ))}
+          </select>
+          <span className="mt-1 block text-xs font-normal text-gray-400">
+            Applies from the next month opened. Existing fees keep their amount.
+          </span>
+        </label>
         {!isMe && (
           <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
             <input
@@ -564,8 +602,12 @@ function EditMemberModal({
         )}
         <FormError message={error} />
         <div className="flex gap-2">
-          <button type="submit" disabled={update.isPending} className={primaryButtonClass}>
-            {update.isPending ? 'Saving…' : 'Save'}
+          <button
+            type="submit"
+            disabled={update.isPending || setPlan.isPending}
+            className={primaryButtonClass}
+          >
+            {update.isPending || setPlan.isPending ? 'Saving…' : 'Save'}
           </button>
           <button type="button" className={secondaryButtonClass} onClick={onClose}>
             Cancel
@@ -615,7 +657,7 @@ function ResetPasswordModal({ member, onClose }: { member: Row; onClose: () => v
       {done ? (
         <div className="space-y-4">
           <CredentialsPanel
-            email={member.account?.email ?? ''}
+            username={loginName(member.account?.email)}
             password={password}
             name={member.display_name}
           />

@@ -471,15 +471,21 @@ export default function ReportsPage() {
               {months.map((m) => (
                 <tr key={m.month}>
                   <Td className="font-semibold text-gray-900">{monthLabel(m.month.slice(0, 7))}</Td>
-                  <Td align="right">{m.sessions}</Td>
-                  <Td align="right">
+                  <Td label="Sessions" align="right">
+                    {m.sessions}
+                  </Td>
+                  <Td label="Attendance" align="right">
                     {m.member_sessions
                       ? `${Math.round((100 * m.attended) / m.member_sessions)}%`
                       : '–'}
                   </Td>
-                  <Td align="right">{formatNpr(m.late_fines_npr)}</Td>
-                  <Td align="right">{formatNpr(m.absence_fines_npr)}</Td>
-                  <Td align="right" className="font-semibold text-emerald-600">
+                  <Td label="Late fines" align="right">
+                    {formatNpr(m.late_fines_npr)}
+                  </Td>
+                  <Td label="Absence fines" align="right">
+                    {formatNpr(m.absence_fines_npr)}
+                  </Td>
+                  <Td label="Collected" align="right" className="font-semibold text-emerald-600">
                     {formatNpr(m.collected_npr)}
                   </Td>
                 </tr>
@@ -541,21 +547,32 @@ export default function ReportsPage() {
                       </span>
                     </div>
                   </Td>
-                  <Td align="right">{r.sessions}</Td>
-                  <Td align="right">{r.on_time}</Td>
-                  <Td align="right">{r.late}</Td>
-                  <Td align="right">{r.absent}</Td>
-                  <Td align="right" className="hidden sm:table-cell">
+                  <Td label="Sessions" align="right">
+                    {r.sessions}
+                  </Td>
+                  <Td label="On time" align="right">
+                    {r.on_time}
+                  </Td>
+                  <Td label="Late" align="right">
+                    {r.late}
+                  </Td>
+                  <Td label="Absent" align="right">
+                    {r.absent}
+                  </Td>
+                  <Td label="Excused" align="right" className="hidden sm:table-cell">
                     {r.excused}
                   </Td>
-                  <Td align="right" className="font-semibold">
+                  <Td label="Attendance" align="right" className="font-semibold">
                     {r.attendance_percent === null ? '–' : `${r.attendance_percent}%`}
                   </Td>
-                  <Td align="right">{r.fines_npr.toLocaleString('en-IN')}</Td>
-                  <Td align="right" className="hidden sm:table-cell">
+                  <Td label="Fines" align="right">
+                    {r.fines_npr.toLocaleString('en-IN')}
+                  </Td>
+                  <Td label="Paid" align="right" className="hidden sm:table-cell">
                     {r.fines_paid_npr.toLocaleString('en-IN')}
                   </Td>
                   <Td
+                    label="Due"
                     align="right"
                     className={r.fines_outstanding_npr > 0 ? 'font-semibold text-rose-600' : ''}
                   >

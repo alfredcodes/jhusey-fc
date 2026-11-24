@@ -156,10 +156,10 @@ export default function AuditPage() {
                         <p className="mt-1 text-[11px] text-gray-400 md:hidden">“{entry.reason}”</p>
                       )}
                     </Td>
-                    <Td className="hidden text-gray-600 md:table-cell">
+                    <Td label="Reason" className="hidden text-gray-600 md:table-cell">
                       {entry.reason ? `“${entry.reason}”` : '—'}
                     </Td>
-                    <Td className="hidden sm:table-cell">
+                    <Td label="By" className="hidden sm:table-cell">
                       <span className="flex items-center gap-2 whitespace-nowrap">
                         <Avatar name={entry.actor?.display_name ?? '?'} size="sm" />
                         {entry.actor?.display_name}

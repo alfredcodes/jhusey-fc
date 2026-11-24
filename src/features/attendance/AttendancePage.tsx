@@ -341,7 +341,7 @@ function RosterLine({
           </p>
         )}
       </Td>
-      <Td className="hidden md:table-cell">
+      <Td label="Check-in" className="hidden md:table-cell">
         {check ? (
           <div>
             <Badge tone={check.tone} dot>
@@ -357,7 +357,7 @@ function RosterLine({
           <span className="text-gray-300">—</span>
         )}
       </Td>
-      <Td className="hidden sm:table-cell">
+      <Td label="Dues / fine" className="hidden sm:table-cell">
         <FineBadge reason={row.fine_reason} amount={row.fine_amount_npr} status={row.fine_status} />
       </Td>
       {isAdmin && (

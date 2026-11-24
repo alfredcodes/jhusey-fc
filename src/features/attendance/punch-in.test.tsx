@@ -6,7 +6,7 @@ import { addDays, nepalToday } from '../../lib/nepal-time.ts'
 import DashboardPage from '../../pages/DashboardPage.tsx'
 import { renderWithProviders } from '../../test/render.tsx'
 import { sessionFor, type FakeState } from '../../test/supabase-mock.ts'
-import PunchInCard from './PunchInCard.tsx'
+import HeaderPunchIn, { PunchInControl } from './HeaderPunchIn.tsx'
 
 const fake = vi.hoisted((): FakeState => ({ session: null, profile: null, rows: {} }))
 
@@ -49,14 +49,14 @@ beforeEach(() => {
   Object.defineProperty(window, 'isSecureContext', { value: true, configurable: true })
 })
 
-describe('PunchInCard', () => {
+describe('PunchInControl', () => {
   it('reads the location once and sends only coordinates and accuracy', async () => {
     gpsReturns(27.72, 85.3408, 12.2)
     vi.mocked(supabase.rpc).mockImplementation((async () => {
       fake.rows.attendance = [lateRecord] // what the server stored
       return { data: {}, error: null }
     }) as never)
-    renderWithProviders(<PunchInCard sessionId="s1" venueName="Dhanyentari Futsal" />)
+    renderWithProviders(<PunchInControl sessionId="s1" venueName="Dhanyentari Futsal" />)
 
     const user = userEvent.setup()
     await user.click(await screen.findByRole('button', { name: 'Punch In' }))
@@ -80,7 +80,7 @@ describe('PunchInCard', () => {
 
   it('explains a blocked location permission and does not call the server', async () => {
     gpsFails(1)
-    renderWithProviders(<PunchInCard sessionId="s1" venueName="Dhanyentari Futsal" />)
+    renderWithProviders(<PunchInControl sessionId="s1" venueName="Dhanyentari Futsal" />)
     const user = userEvent.setup()
     await user.click(await screen.findByRole('button', { name: 'Punch In' }))
 
@@ -91,7 +91,7 @@ describe('PunchInCard', () => {
 
   it('explains a GPS timeout', async () => {
     gpsFails(3)
-    renderWithProviders(<PunchInCard sessionId="s1" venueName="Dhanyentari Futsal" />)
+    renderWithProviders(<PunchInControl sessionId="s1" venueName="Dhanyentari Futsal" />)
     const user = userEvent.setup()
     await user.click(await screen.findByRole('button', { name: 'Punch In' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('took too long')
@@ -106,7 +106,7 @@ describe('PunchInCard', () => {
         message: 'You are 133 m from Dhanyentari Futsal. Punch in within 100 m of the venue.',
       },
     } as never)
-    renderWithProviders(<PunchInCard sessionId="s1" venueName="Dhanyentari Futsal" />)
+    renderWithProviders(<PunchInControl sessionId="s1" venueName="Dhanyentari Futsal" />)
     const user = userEvent.setup()
     await user.click(await screen.findByRole('button', { name: 'Punch In' }))
 
@@ -115,15 +115,16 @@ describe('PunchInCard', () => {
 
   it('shows an existing punch-in instead of the button', async () => {
     fake.rows.attendance = [{ ...lateRecord, status: 'on_time', fine: null }]
-    renderWithProviders(<PunchInCard sessionId="s1" venueName="Dhanyentari Futsal" />)
+    renderWithProviders(<PunchInControl sessionId="s1" venueName="Dhanyentari Futsal" />)
 
+    await userEvent.setup().click(await screen.findByRole('button', { name: 'Punched In' }))
     expect(await screen.findByText('On time')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Punch In' })).not.toBeInTheDocument()
     expect(screen.queryByText(/Late fine/)).not.toBeInTheDocument()
   })
 })
 
-describe('DashboardPage', () => {
+describe('HeaderPunchIn', () => {
   const session = (days: number) => ({
     id: `s${days}`,
     session_date: addDays(nepalToday(), days),
@@ -132,16 +133,62 @@ describe('DashboardPage', () => {
     venue: { id: 'v1', name: 'Dhanyentari Futsal' },
   })
 
-  it('shows the Punch In card on a session day', async () => {
+  it('shows the Punch In button on a session day', async () => {
     fake.rows.sessions = [session(0)]
-    renderWithProviders(<DashboardPage />)
+    renderWithProviders(
+      <>
+        <HeaderPunchIn />
+        <DashboardPage />
+      </>,
+    )
     expect(await screen.findByRole('button', { name: 'Punch In' })).toBeInTheDocument()
   })
 
   it('hides it when there is no session today', async () => {
     fake.rows.sessions = [session(2)]
-    renderWithProviders(<DashboardPage />)
-    expect(await screen.findByText('Upcoming sessions')).toBeInTheDocument()
+    renderWithProviders(
+      <>
+        <HeaderPunchIn />
+        <DashboardPage />
+      </>,
+    )
+    expect(await screen.findByText('Upcoming games')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Punch In' })).not.toBeInTheDocument()
+  })
+})
+
+describe('Mobile punch-in bar', () => {
+  it('punches in from the bar, shows the server result, then gets out of the way', async () => {
+    gpsReturns(27.72, 85.3408, 12.2)
+    vi.mocked(supabase.rpc).mockImplementation((async () => {
+      fake.rows.attendance = [lateRecord]
+      return { data: {}, error: null }
+    }) as never)
+    renderWithProviders(
+      <PunchInControl sessionId="s1" venueName="Dhanyentari Futsal" variant="bar" />,
+    )
+    const user = userEvent.setup()
+    expect(await screen.findByText('Game day · Dhanyentari Futsal')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Punch In' }))
+
+    expect(supabase.rpc).toHaveBeenCalledTimes(1)
+    expect(await screen.findByText('You’re punched in')).toBeInTheDocument()
+    expect(screen.getByText('7:17:05 PM')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Done' }))
+    expect(screen.queryByText('Game day · Dhanyentari Futsal')).not.toBeInTheDocument()
+  })
+
+  it('is not shown once the member has already punched in', async () => {
+    fake.rows.attendance = [{ ...lateRecord, status: 'on_time', fine: null }]
+    renderWithProviders(
+      <>
+        <PunchInControl sessionId="s1" venueName="Dhanyentari Futsal" variant="bar" />
+        <PunchInControl sessionId="s1" venueName="Dhanyentari Futsal" />
+      </>,
+    )
+    // The header chip still shows the punch-in; the bar is gone.
+    expect(await screen.findByRole('button', { name: 'Punched In' })).toBeInTheDocument()
+    expect(screen.queryByText('Game day · Dhanyentari Futsal')).not.toBeInTheDocument()
   })
 })

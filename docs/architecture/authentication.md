@@ -6,7 +6,9 @@
 - One admin account initially.
 - No public registration as admin. Admin creation/role assignment is a controlled bootstrap operation.
 - No shared member login.
-- Onboarding (confirmed 2026-11-21): the admin invites each member from the Supabase Dashboard; public sign-ups are disabled. A trigger on `auth.users` creates the `profiles` row with role `member`. Invite and password-reset emails go through custom SMTP (Resend).
+- Onboarding (2026-11-22, replaces the 2026-11-21 email invites): the admin creates each account in the app (Members → Add member, Edge Function `admin-users`) with an initial password; public sign-ups are disabled; no email is sent. A trigger on `auth.users` creates the `profiles` row with role `member`. The member must choose a new password at first sign-in.
+- Sign-in by username (2026-11-23): members sign in with a username (it may be their phone number) and a password. Supabase Auth needs an email, so the username is stored as `<username>@members.jhusey-fc.invalid` (`.invalid` is reserved and undeliverable); `src/lib/login-name.ts` converts both ways and the sign-in box also accepts a real email (the admin's). Usernames: 2–30 of `a-z 0-9 . _ -`.
+- Initial passwords may be the same for a batch of new members (owner request 2026-11-23). Risk: until a member changes it, a teammate who knows the shared password could sign in as them. The forced change at first sign-in limits this; ask everyone to sign in and change it promptly.
 - Admin bootstrap: invite the admin like any member, then set `role = 'admin'` once with SQL in the dashboard. This is not done in a migration, because user IDs differ per environment.
 
 ## Authorization layers

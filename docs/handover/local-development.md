@@ -52,6 +52,7 @@ New migration: `npx supabase migration new <name>`. Never edit a migration that 
 - Authentication → URL Configuration: Site URL = the Pages URL.
 - No email/SMTP setup: the app sends no email (zero-cost decision, 2026-11-22).
 - Deploy the Edge Function: `npx supabase functions deploy admin-users --no-verify-jwt` (it checks the admin itself). The service-role key is provided by Supabase automatically; never put it in Pages variables.
+- Storage: the `payment-proofs` bucket and its policies are created by migration `20261123120000_fee_submissions.sql` (free tier: 1 GB). Locally, `[storage] enabled = true` in `config.toml`.
 - pg_cron is enabled by the migration (absence fines every 15 minutes); check Integrations → Cron after `db push`.
 - Minimum password length 8. Enable TOTP MFA for the admin.
 - Apply migrations with `supabase db push` only after explicit approval. It is denied in `.claude/settings.json` until then.

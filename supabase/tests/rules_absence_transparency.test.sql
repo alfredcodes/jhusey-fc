@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(51);
+select plan(54);
 
 delete from public.audit_log;
 delete from public.fines;
@@ -11,6 +11,18 @@ delete from public.payments;
 delete from public.attendance;
 delete from public.sessions;
 delete from public.venues;
+-- Local fee data (rolled back at the end) would block removing the users below.
+delete from public.fee_submissions;
+delete from public.fee_payments;
+delete from public.member_fees;
+delete from public.fee_periods;
+-- Tests run against the default rules, whatever the local settings are (rolled back at the end).
+update public.club_settings
+set updated_by = null, punch_open = '18:30', on_time_cutoff = '19:15', punch_close = '21:00',
+  late_fine_npr = 50, absence_fine_npr = 100, regular_fee_npr = 800, partial_fee_npr = 400,
+  fee_due_days = 16, fine_due_days = null
+where id;
+delete from public.member_inactive_periods;
 delete from auth.users;
 
 insert into auth.users (id, email, raw_user_meta_data) values
@@ -47,24 +59,33 @@ create function pg_temp.nepal(p_day integer, p_time time) returns timestamptz
 language sql as $$ select ((public.nepal_today() + p_day) + p_time) at time zone 'Asia/Kathmandu' $$;
 
 -- ---------------------------------------------------------------------------
--- Member excuses (deadline: midnight before the session day)
+-- Member excuses (deadline: 9 PM Nepal time the day before the game)
 -- ---------------------------------------------------------------------------
+-- The boundary, with a fixed clock (session on day +1, so the deadline is today 21:00).
+select ok(public.absence_notice_open(public.nepal_today() + 1, pg_temp.nepal(0, '20:59:59')),
+  'a notice at 8:59:59 PM the day before is in time');
+select ok(not public.absence_notice_open(public.nepal_today() + 1, pg_temp.nepal(0, '21:00:00')),
+  'a notice at 9:00 PM the day before is too late');
+select ok(not public.absence_notice_open(public.nepal_today(), pg_temp.nepal(0, '08:00:00')),
+  'a notice on the game day is too late');
+
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b1","role":"authenticated"}', true);
 set local role authenticated;
 
-select lives_ok($$ select public.notify_absence('20000000-0000-0000-0000-000000000005', 'Work trip') $$,
-  'a member can say they cannot come to tomorrow''s session');
-select throws_ok($$ select public.notify_absence('20000000-0000-0000-0000-000000000005', null) $$,
+-- Session 4 is three days away, so these do not depend on the time the tests run.
+select lives_ok($$ select public.notify_absence('20000000-0000-0000-0000-000000000004', 'Work trip') $$,
+  'a member can say they cannot come to a game in three days');
+select throws_ok($$ select public.notify_absence('20000000-0000-0000-0000-000000000004', null) $$,
   '22023', 'You have already told the team you cannot come.', 'a second notice is refused');
 select throws_ok($$ select public.notify_absence('20000000-0000-0000-0000-000000000006', null) $$,
-  '22023', 'Absence notices close at midnight before the session day. Contact the admin.',
-  'a notice on the session day is too late');
+  '22023', 'Absence notices close at 9 PM the day before the game. Contact the admin.',
+  'a notice on the game day is refused');
 select throws_ok($$ select public.notify_absence('20000000-0000-0000-0000-000000000002', null) $$,
   '22023', 'Choose a scheduled session.', 'a cancelled session cannot be excused');
-select lives_ok($$ select public.withdraw_absence('20000000-0000-0000-0000-000000000005') $$,
+select lives_ok($$ select public.withdraw_absence('20000000-0000-0000-0000-000000000004') $$,
   'a member can withdraw their notice before the deadline');
 select is((select count(*)::int from public.absence_excuses), 0, 'the notice is gone');
-select lives_ok($$ select public.notify_absence('20000000-0000-0000-0000-000000000005', 'Work trip') $$,
+select lives_ok($$ select public.notify_absence('20000000-0000-0000-0000-000000000004', 'Work trip') $$,
   'and can give it again');
 select throws_ok(
   $$ insert into public.absence_excuses (member_id, session_id, source, created_by) values
@@ -77,6 +98,12 @@ select throws_ok($$ select public.admin_excuse_absence('00000000-0000-0000-0000-
   '20000000-0000-0000-0000-000000000001', 'Was sick') $$,
   '42501', 'Only the admin can do this.', 'a member cannot excuse themselves after the deadline');
 reset role;
+
+-- Bikash also told the team (in time) that he cannot come tomorrow. Inserted as fixture data
+-- so the absence-fine tests below do not depend on whether it is past 9 PM right now.
+insert into public.absence_excuses (member_id, session_id, note, source, created_by) values
+  ('00000000-0000-0000-0000-0000000000b1', '20000000-0000-0000-0000-000000000005', 'Work trip',
+   'member', '00000000-0000-0000-0000-0000000000b1');
 
 -- ---------------------------------------------------------------------------
 -- Absence fines (pg_cron calls _create_absence_fines(now()))

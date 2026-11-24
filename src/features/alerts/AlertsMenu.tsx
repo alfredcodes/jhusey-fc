@@ -8,7 +8,8 @@ import { formatNpr } from '../../lib/format.ts'
 import { addDays, formatCalendarDate, nepalToday } from '../../lib/nepal-time.ts'
 import { supabase } from '../../lib/supabase.ts'
 import { useAuth } from '../auth/auth-context.ts'
-import { timeLabel, useClubRules, useMyExcuses } from '../team/queries.ts'
+import { useMySubmissions, usePendingSubmissions } from '../fees/submissions.ts'
+import { timeLabel, useClubRules, useIsAdmin, useMyExcuses } from '../team/queries.ts'
 
 const SEEN_KEY = 'jfc.alertsSeenAt'
 
@@ -27,6 +28,9 @@ function useAlerts(): Alert[] {
   const userId = session?.user.id
   const { data: rules } = useClubRules()
   const excuses = useMyExcuses()
+  const isAdmin = useIsAdmin()
+  const pending = usePendingSubmissions(isAdmin)
+  const mySubmissions = useMySubmissions()
   const today = nepalToday()
 
   const fines = useQuery({
@@ -60,6 +64,36 @@ function useAlerts(): Alert[] {
   })
 
   const alerts: Alert[] = []
+
+  // Monthly fee submissions: the admin hears about new ones, the member about the decision.
+  const pendingRows = pending.data ?? []
+  if (pendingRows.length > 0) {
+    const latest = pendingRows[pendingRows.length - 1]
+    alerts.push({
+      id: `p-pending-${latest.id}`,
+      at: latest.created_at,
+      icon: 'cash',
+      tone: 'text-amber-600',
+      text: `${pendingRows.length} payment submission${pendingRows.length === 1 ? '' : 's'} waiting for your approval (latest: ${latest.member?.display_name}).`,
+      to: '/fees',
+    })
+  }
+  const monthAgo = addDays(today, -30) // ISO timestamps compare correctly with a date
+  for (const submission of mySubmissions.data ?? []) {
+    if (submission.status === 'pending' || !submission.reviewed_at) continue
+    if (submission.reviewed_at < monthAgo) continue
+    const approved = submission.status === 'approved'
+    alerts.push({
+      id: `p-${submission.id}-${submission.status}`,
+      at: submission.reviewed_at,
+      icon: approved ? 'checkCircle' : 'warning',
+      tone: approved ? 'text-emerald-600' : 'text-rose-600',
+      text: approved
+        ? `Your ${formatNpr(submission.amount_npr)} fee payment was approved.`
+        : `Your ${formatNpr(submission.amount_npr)} fee payment was rejected${submission.review_note ? `: ${submission.review_note}` : '.'}`,
+      to: '/fees',
+    })
+  }
   for (const session of sessions.data ?? []) {
     const excused = excuses.data?.some((excuse) => excuse.session_id === session.id)
     if (session.status === 'cancelled') {
@@ -69,7 +103,7 @@ function useAlerts(): Alert[] {
         icon: 'ban',
         tone: 'text-gray-500',
         text: `${session.session_date === today ? 'Today' : 'Tomorrow'}'s session is cancelled.`,
-        to: '/sessions',
+        to: '/games',
       })
     } else if (session.session_date === today) {
       alerts.push({
@@ -88,8 +122,8 @@ function useAlerts(): Alert[] {
         at: `${session.session_date}T00:00:00`,
         icon: 'calendar',
         tone: 'text-blue-600',
-        text: "Session tomorrow. Can't come? Tell the team before midnight.",
-        to: '/sessions',
+        text: "Game tomorrow. Can't come? Tell the team before 9 PM today.",
+        to: '/games',
       })
     }
   }
@@ -119,7 +153,9 @@ export default function AlertsMenu() {
   const [open, setOpen] = useState(false)
   const [seen, setSeen] = useState(readSeen)
   const ref = useRef<HTMLDivElement>(null)
-  const unread = alerts.filter((alert) => alert.id.startsWith('f-') && alert.at > seen).length
+  const unread = alerts.filter(
+    (alert) => (alert.id.startsWith('f-') || alert.id.startsWith('p-')) && alert.at > seen,
+  ).length
 
   useEffect(() => {
     if (!open) return

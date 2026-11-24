@@ -51,8 +51,9 @@ describe('signed in as a member', () => {
     const nav = screen.getAllByRole('navigation', { name: 'Main' })[0]
     for (const name of [
       'Attendance Record',
+      'Futsal Games',
       'Fines',
-      'Payments',
+      'Monthly Fees',
       'Members',
       'Reports',
       'Settings',

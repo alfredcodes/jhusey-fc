@@ -21,6 +21,12 @@ Test boundaries:
 - 19:15:00 -> On Time
 - 19:15:01 -> Late + NPR 50
 
+## Who counts for a game (2026-11-24)
+A member counts for a game (absence, absence fine, reports, roster, My Record) from their join date,
+except on days inside an inactive period: deactivating opens one from that day, reactivating closes it
+on the day before. Games while inactive are never absences and never fined, also after reactivation.
+Stored in `member_inactive_periods`; decided by `member_counted_on()`.
+
 ## Sessions
 Sessions are recurring, but each attendance record must reference a concrete session/date. A member cannot punch in twice for the same session. Absence status should be derived only after the relevant session's attendance window is closed and must not automatically create a fine unless an approved rule says so.
 

@@ -48,6 +48,14 @@ function fakeQuery(state: FakeState, table: string) {
   return builder
 }
 
+const bucket = {
+  upload: vi.fn(async (path: string) => ({ data: { path }, error: null })),
+  createSignedUrl: vi.fn(async (path: string) => ({
+    data: { signedUrl: `https://storage.test/${path}` },
+    error: null,
+  })),
+}
+
 export function buildFakeSupabase(state: FakeState) {
   return {
     auth: {
@@ -64,6 +72,8 @@ export function buildFakeSupabase(state: FakeState) {
     from: vi.fn((table: string) => fakeQuery(state, table)),
     // Edge Functions: tests override with mockResolvedValue.
     functions: { invoke: vi.fn(async () => ({ data: null, error: null })) },
+    // Storage: one shared bucket fake so tests can assert on upload calls.
+    storage: { from: vi.fn(() => bucket) },
     // Default: return state.rows['rpc:<name>'] (or []). Tests can override per call.
     rpc: vi.fn(async (name: string) => ({ data: state.rows[`rpc:${name}`] ?? [], error: null })),
   }

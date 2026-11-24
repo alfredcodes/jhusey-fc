@@ -76,7 +76,7 @@ export default function HistoryPage() {
                       </p>
                     )}
                   </Td>
-                  <Td className="hidden md:table-cell">
+                  <Td label="Evidence" className="hidden md:table-cell">
                     {row.distance_m !== null && row.accuracy_m !== null ? (
                       <div className="text-xs text-gray-600">
                         <p>
@@ -99,7 +99,7 @@ export default function HistoryPage() {
                       <span className="text-gray-300">—</span>
                     )}
                   </Td>
-                  <Td>
+                  <Td label="Fine">
                     <FineBadge
                       reason={row.fine_reason}
                       amount={row.fine_npr}

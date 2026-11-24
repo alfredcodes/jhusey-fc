@@ -81,11 +81,16 @@ async function invokeAdminUsers(body: Record<string, unknown>) {
 export function useCreateMember() {
   const refresh = useRefreshAll()
   return useMutation({
-    mutationFn: (input: { displayName: string; email: string; phone: string; password: string }) =>
+    mutationFn: (input: {
+      displayName: string
+      username: string
+      phone: string
+      password: string
+    }) =>
       invokeAdminUsers({
         action: 'create',
         display_name: input.displayName,
-        email: input.email,
+        username: input.username,
         phone: input.phone,
         password: input.password,
       }),
