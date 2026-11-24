@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(22);
+select plan(21);
 
 -- Start from an empty slate. Everything runs in one transaction that is rolled
 -- back at the end, so real local data is untouched.
@@ -60,11 +60,6 @@ select is(
 select is(
   (select role::text from public.profiles where id = '00000000-0000-0000-0000-0000000000a1'),
   'member', 'a role in user metadata is ignored');
-
-select throws_ok(
-  $$ update public.profiles set role = 'admin' where id = '00000000-0000-0000-0000-0000000000b1' $$,
-  '23505', null,
-  'the database allows only one admin');
 
 select throws_ok(
   $$ insert into auth.users (id, email) values

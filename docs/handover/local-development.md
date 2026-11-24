@@ -33,14 +33,15 @@ runtime enabled in `config.toml`); if it is not running, use `npx supabase funct
 
 Public sign-up is disabled (`enable_signup = false`).
 
-## Bootstrapping the single admin
+## Bootstrapping the admins (up to two)
 Create the first user in Studio → Authentication → Users → Add user (email + password, auto-confirm),
 then run once in Studio → SQL Editor:
 ```sql
 update public.profiles set role = 'admin'
 where id = (select id from auth.users where email = 'ADMIN_EMAIL_HERE');
 ```
-The database refuses a second admin (`profiles_single_admin` unique index).
+Run it again with the second admin's email for a co-admin. The database refuses a third admin
+(trigger `profiles_admin_limit`). To remove an admin: `update public.profiles set role = 'member' where id = (select id from auth.users where email = '...');`
 
 ## Database workflow
 | Command | What it does |

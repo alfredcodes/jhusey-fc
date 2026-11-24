@@ -14,7 +14,7 @@
 | Late fine | NPR 50 default, admin-editable (2026-11-22) | Stored amount on each fine never changes |
 | Punch-in verification | GPS only | No Session PIN; location captured at punch-in |
 | Location capture | On explicit Punch In only | No continuous/background tracking |
-| Admin | One admin account initially | No multi-admin workflows for MVP |
+| Admin | Up to two admins (2026-11-24; was one). Set with SQL only; admins cannot deactivate each other or reset each other's password | Owner decision 2026-11-24; enforced by trigger `profiles_admin_limit` |
 | Payment | Manual admin confirmation | No payment gateway in MVP |
 | Domain | `jhusey-fc.com` preferred, not purchased/assumed | Free provider subdomain first |
 | Sensitive operations | PostgreSQL RPC; one Edge Function `admin-users` for account creation and password reset (2026-11-22) | Creating users needs the service-role key, which must stay server-side |

@@ -372,6 +372,30 @@ describe('Members', () => {
     expect(supabase.rpc).not.toHaveBeenCalledWith('admin_member_accounts')
   })
 
+  it('admins cannot reset or deactivate another admin (two admins allowed)', async () => {
+    as('admin')
+    fake.rows.profiles = [
+      ...(fake.rows.profiles as object[]),
+      {
+        id: 'admin-2',
+        display_name: 'Rita',
+        role: 'admin',
+        is_active: true,
+        created_at: '2026-11-01T00:00:00Z',
+      },
+    ]
+    renderWithProviders(<MembersPage />)
+    const rita = (await screen.findByText('Rita')).closest('tr')!
+    const asha = screen.getByText('Asha').closest('tr')!
+    expect(within(rita).queryByRole('button', { name: 'Reset password' })).not.toBeInTheDocument()
+    expect(within(asha).getByRole('button', { name: 'Reset password' })).toBeInTheDocument()
+
+    const user = userEvent.setup()
+    await user.click(within(rita).getByRole('button', { name: 'Edit' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).queryByRole('checkbox', { name: /Active/ })).not.toBeInTheDocument()
+  })
+
   it('the admin creates a member and sees the initial password once', async () => {
     as('admin')
     vi.mocked(supabase.functions.invoke).mockResolvedValue({

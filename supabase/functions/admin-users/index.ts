@@ -143,6 +143,15 @@ Deno.serve(async (req) => {
     if (memberId === caller.user.id) {
       return fail(400, 'Change your own password in Settings → Security.')
     }
+    // Two admins (2026-11-24): one admin must not be able to take over the other's account.
+    const { data: target } = await admin
+      .from('profiles')
+      .select('role')
+      .eq('id', memberId)
+      .maybeSingle()
+    if (target?.role === 'admin') {
+      return fail(403, 'An admin changes their own password in Settings → Security.')
+    }
     const passwordProblem = checkPassword(body.password)
     if (passwordProblem) return fail(400, passwordProblem)
 

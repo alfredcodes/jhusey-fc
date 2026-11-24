@@ -312,13 +312,16 @@ export default function MembersPage() {
                         >
                           Edit
                         </button>
-                        <button
-                          type="button"
-                          className={linkButtonClass}
-                          onClick={() => setResetting(row)}
-                        >
-                          Reset password
-                        </button>
+                        {/* Admins change their own password (Settings → Security). */}
+                        {row.role !== 'admin' && (
+                          <button
+                            type="button"
+                            className={linkButtonClass}
+                            onClick={() => setResetting(row)}
+                          >
+                            Reset password
+                          </button>
+                        )}
                       </div>
                     </Td>
                   )}
@@ -527,6 +530,8 @@ function EditMemberModal({
   const { data: me } = useProfile()
   const [error, setError] = useState<string | null>(null)
   const isMe = me?.id === member.id
+  // Admin accounts stay active: remove the admin role first (SQL), then deactivate.
+  const keepActive = isMe || member.role === 'admin'
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -537,7 +542,7 @@ function EditMemberModal({
       await update.mutateAsync({
         id: member.id,
         displayName: name,
-        isActive: isMe || form.get('active') === 'on',
+        isActive: keepActive || form.get('active') === 'on',
         phone: String(form.get('phone')).trim(),
       })
       const plan = String(form.get('plan')) as FeePlan
@@ -589,7 +594,7 @@ function EditMemberModal({
             Applies from the next month opened. Existing fees keep their amount.
           </span>
         </label>
-        {!isMe && (
+        {!keepActive && (
           <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
             <input
               name="active"
