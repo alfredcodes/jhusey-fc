@@ -20,10 +20,10 @@ export default function AuthCard({
             <span className="text-xl font-bold tracking-tighter text-white select-none">J.</span>
           </span>
           <span className="flex flex-col">
-            <span className="text-lg leading-none font-bold tracking-tight text-gray-900">
+            <span className="text-lg leading-none font-bold tracking-tight text-white">
               JHUSEY FC
             </span>
-            <span className="mt-1 text-[11px] font-medium tracking-wider text-gray-400 uppercase">
+            <span className="mt-1 text-[11px] font-medium tracking-wider text-white uppercase">
               Futsal Club · Kathmandu
             </span>
           </span>
