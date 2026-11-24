@@ -1,4 +1,4 @@
-// Photo behind the sign-in pages, with a dark overlay so the card stays readable.
+// Photo behind the sign-in pages, lightly dimmed so the card stays readable.
 // Photo: Izuddin Helmi Adnan on Unsplash (Unsplash License: free for commercial use, credit
 // appreciated). https://unsplash.com/photos/K5ChxJaheKI — a floodlit training pitch, seen from above.
 // Two crops: upright for phones, turned sideways for wide screens. Both are in the PWA precache.
@@ -13,12 +13,12 @@ export default function LoginBackdrop() {
           alt=""
           decoding="async"
           fetchPriority="high"
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover brightness-125 saturate-110"
         />
       </picture>
-      {/* Dark overlay, a little stronger at the edges */}
-      <div className="absolute inset-0 bg-gray-950/55" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(3,7,18,0.6)_100%)]" />
+      {/* Light dim: the pitch stays bright, the edges soften so the card stands out */}
+      <div className="absolute inset-0 bg-gray-950/15" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_50%,rgba(3,7,18,0.35)_100%)]" />
     </div>
   )
 }
