@@ -12,18 +12,18 @@ export default function AuthCard({
   children: ReactNode
 }) {
   return (
-    <main className="relative isolate flex min-h-dvh items-center justify-center bg-gray-950 px-4 py-10">
+    <main className="relative isolate flex min-h-dvh items-center justify-center bg-emerald-900 px-4 py-10 landscape:lg:justify-end landscape:lg:pr-[10vw]">
       <LoginBackdrop />
       <div className="relative w-full max-w-sm">
         <div className="mb-6 flex items-center gap-3.5">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-400 shadow-lg ring-1 shadow-blue-950/40 ring-white/25">
             <span className="text-xl font-bold tracking-tighter text-white select-none">J.</span>
           </span>
-          <span className="flex flex-col [text-shadow:0_1px_3px_rgb(0_0_0/0.55)]">
-            <span className="text-lg leading-none font-bold tracking-tight text-white">
+          <span className="flex flex-col [text-shadow:0_1px_2px_rgb(255_255_255/0.6)]">
+            <span className="text-lg leading-none font-bold tracking-tight text-gray-900">
               JHUSEY FC
             </span>
-            <span className="mt-1 text-[11px] font-semibold tracking-wider text-white uppercase">
+            <span className="mt-1 text-[11px] font-semibold tracking-wider text-gray-700 uppercase">
               Futsal Club · Kathmandu
             </span>
           </span>
