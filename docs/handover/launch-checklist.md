@@ -34,6 +34,13 @@ Location, e.g. `27.7202, 85.3408` (about 40 m from the venue).
 - [ ] Second tap: "You have already punched in".
 - [ ] Block location permission: clear explanation, nothing recorded.
 
+### Installable app (PWA) - on the deployed HTTPS site
+- [ ] Android Chrome: menu → Install app (or the account menu → Install app); the icon opens full screen.
+- [ ] iPhone Safari: login page → "Install the app on this phone" shows the steps; Share → Add to Home Screen works.
+- [ ] Installed app: GPS punch-in asks for location and works the same as in the browser.
+- [ ] Airplane mode: the app still opens and says it is offline; back online it loads normally.
+- [ ] After a new deploy, an open app shows "New version available"; Reload switches to it.
+
 ### Member pages
 - [ ] Home stats and My attendance match what happened; map link opens.
 - [ ] Team shows names + On time/Late only.

@@ -4,7 +4,10 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 import StatusScreen from './components/StatusScreen.tsx'
 import { findEnvProblem } from './lib/env.ts'
+import { startPwa } from './pwa/pwa.ts'
 import './index.css'
+
+startPwa()
 
 const root = createRoot(document.getElementById('root')!)
 const envProblem = findEnvProblem(import.meta.env)

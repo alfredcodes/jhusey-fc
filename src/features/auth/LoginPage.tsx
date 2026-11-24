@@ -4,6 +4,7 @@ import AuthCard from '../../components/AuthCard.tsx'
 import { FormError, inputClass, labelClass, primaryButtonClass } from '../../components/form.tsx'
 import { toLoginEmail } from '../../lib/login-name.ts'
 import { supabase } from '../../lib/supabase.ts'
+import { InstallAppButton } from '../../pwa/PwaBanners.tsx'
 import { useAuth } from './auth-context.ts'
 
 export default function LoginPage() {
@@ -82,6 +83,9 @@ export default function LoginPage() {
       <p className="mt-2 text-xs text-gray-400">
         Accounts are created by the team admin. There is no public sign-up.
       </p>
+      <InstallAppButton className="mt-5 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
+        Install the app on this phone
+      </InstallAppButton>
     </AuthCard>
   )
 }

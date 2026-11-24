@@ -18,6 +18,11 @@ Never put `SECRET_KEY` or `SERVICE_ROLE_KEY` in `.env.local` or any `VITE_` vari
 | Supabase Studio (local dashboard) | http://127.0.0.1:54323 |
 | Mailpit (catches every local email) | http://127.0.0.1:54324 |
 
+## Testing the installable app (PWA) locally
+The service worker exists only in production builds: `npm run build` then `npx vite preview`
+(http://localhost:4173). `npm run dev` never registers it. To start clean in Chrome: DevTools →
+Application → Storage → Clear site data.
+
 ## Adding a member (local)
 The admin opens **Members → Add member**, enters name, email, optional phone and an initial password
 (or **Generate**), and shares the login shown once. The member must choose a new password at first

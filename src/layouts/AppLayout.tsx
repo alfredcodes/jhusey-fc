@@ -10,6 +10,7 @@ import AlertsMenu from '../features/alerts/AlertsMenu.tsx'
 import HeaderPunchIn, { MobilePunchInBar } from '../features/attendance/HeaderPunchIn.tsx'
 import { timeLabel, useClubRules } from '../features/team/queries.ts'
 import { supabase } from '../lib/supabase.ts'
+import { InstallAppButton } from '../pwa/PwaBanners.tsx'
 
 type NavItem = { to: string; label: string; icon: IconName; end?: boolean; adminOnly?: boolean }
 
@@ -219,6 +220,10 @@ function UserMenu() {
           >
             <Icon name="settings" className="h-4 w-4 text-gray-400" /> Settings
           </Link>
+          <InstallAppButton
+            role="menuitem"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 [&>svg]:text-gray-400"
+          />
           <button
             role="menuitem"
             type="button"

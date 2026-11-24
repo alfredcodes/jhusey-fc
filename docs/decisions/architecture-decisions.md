@@ -41,6 +41,7 @@
 | Corrections | Evidence columns immutable (trigger); only current status changes, original_status kept; Late→On time waives the pending fine, On time→Late creates/reinstates it; blocked while the fine is paid | Phase 6, 2026-11-22 |
 | Audit | Single audit_log written by every admin RPC (actor, action, entity, reason, details); admin read-only | Phase 6, 2026-11-22 |
 | Team transparency | Active members read all profiles, fines, excuses (not notes), `session_roster()`, `team_payments()`, `team_report()`, `team_monthly_summary()`. GPS rows and payment notes stay own/admin | Owner decision 2026-11-22; replaces the names-only team view below |
+| PWA | Installable app (manifest + hand-written service worker, no dependency). Network-first pages, cached app files, "New version → Reload" banner, offline notice. Never caches Supabase data. No push notifications | 2026-11-24 |
 | UI | Google Stitch light design (Inter, blue #2563eb); one shared layout for members and admin with admin controls hidden for members | 2026-11-22 |
 | ~~Team attendance view~~ (superseded) | `team_attendance()` security definer RPC returning display name + status only, for members who punched in | A `security_invoker` view would apply own-row RLS and show only the caller |
 

@@ -13,6 +13,7 @@ Jhusey FC is a private futsal team management app for approximately 24 members i
 - oxlint, Prettier, Vitest + React Testing Library; Playwright later, for critical flows only
 - Local Supabase via the CLI dev dependency + Docker Desktop
 - Cloudflare Pages for static frontend hosting
+- Installable PWA without a plugin: `pwa/sw-template.js` becomes `dist/sw.js` at build (`vite.config.ts`). It caches only the app shell and fonts, never Supabase responses; production builds only
 
 ## Scripts
 `dev`, `build`, `typecheck`, `lint`, `format`, `format:check`, `test`, `test:watch`,
