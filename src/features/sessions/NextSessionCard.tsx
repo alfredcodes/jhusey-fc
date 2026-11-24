@@ -6,7 +6,7 @@ import { errorMessage } from '../../lib/errors.ts'
 import { formatCalendarDate, nepalToday } from '../../lib/nepal-time.ts'
 import { timeLabel, useClubRules } from '../team/queries.ts'
 import { useUpcomingSessions } from './queries.ts'
-import { CantComeButton } from './SessionsPage.tsx'
+import { GameResponseButton } from './SessionsPage.tsx'
 
 /** The next sessions, with the member's own "can't come" action. */
 export default function NextSessionCard() {
@@ -61,7 +61,7 @@ export default function NextSessionCard() {
                   {cancelled ? (
                     <Badge tone="gray">Cancelled</Badge>
                   ) : (
-                    <CantComeButton session={session} />
+                    <GameResponseButton session={session} />
                   )}
                 </div>
               </li>

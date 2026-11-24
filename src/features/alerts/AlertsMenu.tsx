@@ -9,7 +9,14 @@ import { addDays, formatCalendarDate, nepalToday } from '../../lib/nepal-time.ts
 import { supabase } from '../../lib/supabase.ts'
 import { useAuth } from '../auth/auth-context.ts'
 import { useMySubmissions, usePendingSubmissions } from '../fees/submissions.ts'
-import { timeLabel, useClubRules, useIsAdmin, useMyExcuses } from '../team/queries.ts'
+import { useProfile } from '../auth/use-profile.ts'
+import {
+  timeLabel,
+  useClubRules,
+  useIsAdmin,
+  useMyConfirmations,
+  useMyExcuses,
+} from '../team/queries.ts'
 
 const SEEN_KEY = 'jfc.alertsSeenAt'
 
@@ -28,6 +35,9 @@ function useAlerts(): Alert[] {
   const userId = session?.user.id
   const { data: rules } = useClubRules()
   const excuses = useMyExcuses()
+  const confirmations = useMyConfirmations()
+  const { data: profile } = useProfile()
+  const partial = profile?.fee_plan === 'partial'
   const isAdmin = useIsAdmin()
   const pending = usePendingSubmissions(isAdmin)
   const mySubmissions = useMySubmissions()
@@ -115,6 +125,19 @@ function useAlerts(): Alert[] {
           ? 'Session today: you told the team you cannot come.'
           : `Session today. Punch in from ${timeLabel(rules?.punch_open)}, on time until ${timeLabel(rules?.on_time_cutoff)}.`,
         to: '/',
+      })
+    } else if (!excused && partial) {
+      // Partial players are expected only at games they confirm.
+      const confirmed = confirmations.data?.some((row) => row.session_id === session.id)
+      alerts.push({
+        id: `s-${session.id}`,
+        at: `${session.session_date}T00:00:00`,
+        icon: 'calendar',
+        tone: 'text-blue-600',
+        text: confirmed
+          ? 'Session tomorrow: you said you’re coming.'
+          : 'Session tomorrow. Coming? Tap I’m coming before 9 PM.',
+        to: '/games',
       })
     } else if (!excused) {
       alerts.push({

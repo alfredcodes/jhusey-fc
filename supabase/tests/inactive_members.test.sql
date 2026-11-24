@@ -17,6 +17,7 @@ delete from public.fee_submissions;
 delete from public.fee_payments;
 delete from public.member_fees;
 delete from public.fee_periods;
+delete from public.game_commitments;
 delete from public.member_inactive_periods;
 update public.club_settings set updated_by = null where id;
 delete from auth.users;

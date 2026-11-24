@@ -218,6 +218,37 @@ export function useNotifyAbsence() {
   })
 }
 
+/** The signed-in partial player's "I'm coming" confirmations. */
+export function useMyConfirmations() {
+  const { session } = useAuth()
+  const userId = session?.user.id
+  return useQuery({
+    queryKey: ['confirmations', 'mine', userId],
+    enabled: userId !== undefined,
+    queryFn: () =>
+      rows(
+        supabase
+          .from('game_commitments')
+          .select('id, session_id, created_at')
+          .eq('member_id', userId!),
+      ),
+  })
+}
+
+/** Partial players: confirm ("I'm coming") or withdraw, until 9 PM the day before the game. */
+export function useConfirmGame() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: { sessionId: string; withdraw?: boolean }) => {
+      const { error } = input.withdraw
+        ? await supabase.rpc('withdraw_game_confirmation', { p_session_id: input.sessionId })
+        : await supabase.rpc('confirm_game', { p_session_id: input.sessionId })
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries(),
+  })
+}
+
 export function useExcuseAbsence() {
   const queryClient = useQueryClient()
   return useMutation({

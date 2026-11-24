@@ -49,6 +49,7 @@ function as(role: 'admin' | 'member') {
     display_name: role === 'admin' ? 'Babu' : 'Asha',
     role,
     is_active: true,
+    fee_plan: 'regular',
   }
 }
 
@@ -557,6 +558,58 @@ describe('Futsal Games', () => {
       },
     ]
     fake.rows.absence_excuses = []
+    fake.rows.game_commitments = []
+  })
+
+  function asPartial() {
+    as('member')
+    fake.profile = { ...fake.profile!, fee_plan: 'partial' }
+  }
+
+  it('a partial player confirms a game with "I’m coming" instead of "Can’t come"', async () => {
+    asPartial()
+    renderWithProviders(<SessionsPage />)
+    const user = userEvent.setup()
+    await user.click(await screen.findByRole('button', { name: 'I’m coming' }))
+    expect(supabase.rpc).toHaveBeenCalledWith('confirm_game', { p_session_id: 's-next' })
+    expect(screen.queryByRole('button', { name: 'Can’t come' })).not.toBeInTheDocument()
+  })
+
+  it('a confirmed partial player sees it and can withdraw before the deadline', async () => {
+    asPartial()
+    fake.rows.game_commitments = [
+      {
+        id: 'c1',
+        session_id: 's-next',
+        member_id: 'm-asha',
+        created_at: '',
+        member: { display_name: 'Asha' },
+      },
+    ]
+    renderWithProviders(<SessionsPage />)
+    expect(await screen.findByText('You’re coming')).toBeInTheDocument()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Withdraw' }))
+    expect(supabase.rpc).toHaveBeenCalledWith('withdraw_game_confirmation', {
+      p_session_id: 's-next',
+    })
+  })
+
+  it('regular players keep "Can’t come" and everyone sees which partial players are coming', async () => {
+    as('member')
+    fake.rows.game_commitments = [
+      {
+        id: 'c1',
+        session_id: 's-next',
+        member_id: 'm-p',
+        created_at: '',
+        member: { display_name: 'Pooja' },
+      },
+    ]
+    renderWithProviders(<SessionsPage />)
+    expect(await screen.findByRole('button', { name: 'Can’t come' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'I’m coming' })).not.toBeInTheDocument()
+    expect(await screen.findByText('Pooja')).toBeInTheDocument()
   })
 
   it('a member tells the team they cannot come', async () => {

@@ -522,6 +522,43 @@ export type Database = {
           },
         ]
       }
+      game_commitments: {
+        Row: {
+          created_at: string
+          id: string
+          member_id: string
+          session_id: string
+        }
+        ComputedFields: never
+        Insert: {
+          created_at?: string
+          id?: string
+          member_id: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          member_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'game_commitments_member_id_fkey'
+            columns: ['member_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'game_commitments_session_id_fkey'
+            columns: ['session_id']
+            isOneToOne: false
+            referencedRelation: 'sessions'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       member_fees: {
         Row: {
           amount_npr: number
@@ -1000,6 +1037,7 @@ export type Database = {
           }
       check_fee_month: { Args: { p_month: string }; Returns: string }
       check_report_range: { Args: { p_from: string; p_to: string }; Returns: undefined }
+      confirm_game: { Args: { p_session_id: string }; Returns: undefined }
       distance_m: {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number
@@ -1027,6 +1065,16 @@ export type Database = {
       mark_password_changed: { Args: Record<PropertyKey, never>; Returns: undefined }
       member_counted_on: {
         Args: { p_date: string; p_joined_at: string; p_member_id: string }
+        Returns: boolean
+      }
+      member_expected: {
+        Args: {
+          p_date: string
+          p_joined_at: string
+          p_member_id: string
+          p_plan: Database['public']['Enums']['fee_plan']
+          p_session_id: string
+        }
         Returns: boolean
       }
       my_session_history: {
@@ -1161,6 +1209,7 @@ export type Database = {
       time_label: { Args: { p_time: string }; Returns: string }
       update_my_phone: { Args: { p_phone: string }; Returns: undefined }
       withdraw_absence: { Args: { p_session_id: string }; Returns: undefined }
+      withdraw_game_confirmation: { Args: { p_session_id: string }; Returns: undefined }
       write_audit: {
         Args: {
           p_action: string

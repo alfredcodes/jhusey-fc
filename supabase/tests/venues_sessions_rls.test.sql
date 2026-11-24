@@ -23,6 +23,7 @@ set updated_by = null, punch_open = '18:30', on_time_cutoff = '19:15', punch_clo
   late_fine_npr = 50, absence_fine_npr = 100, regular_fee_npr = 800, partial_fee_npr = 400,
   fee_due_days = 16, fine_due_days = null
 where id;
+delete from public.game_commitments;
 delete from public.member_inactive_periods;
 delete from auth.users;
 

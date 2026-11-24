@@ -24,6 +24,7 @@ function as(role: 'admin' | 'member') {
     display_name: role === 'admin' ? 'Babu' : 'Asha',
     role,
     is_active: true,
+    fee_plan: 'regular',
   }
 }
 

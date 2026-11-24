@@ -13,7 +13,7 @@ vi.mock('./lib/supabase.ts', async () => {
 
 function signInAs(role: 'admin' | 'member', is_active = true) {
   fake.session = sessionFor('user-1')
-  fake.profile = { id: 'user-1', display_name: 'Test Player', role, is_active }
+  fake.profile = { id: 'user-1', display_name: 'Test Player', role, is_active, fee_plan: 'regular' }
 }
 
 const heading = (name: string | RegExp) => screen.findByRole('heading', { level: 1, name })

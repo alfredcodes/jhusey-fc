@@ -117,6 +117,27 @@ export function useAbsenceNotices(sessionIds: string[]) {
 
 export type AbsenceNotice = NonNullable<ReturnType<typeof useAbsenceNotices>['data']>[number]
 
+/** Partial-plan players who tapped "I'm coming", per game (names only). */
+export function useGameConfirmations(sessionIds: string[]) {
+  return useQuery({
+    queryKey: ['confirmations', 'sessions', sessionIds],
+    enabled: sessionIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('game_commitments')
+        .select(
+          'id, session_id, member_id, created_at, member:profiles!game_commitments_member_id_fkey(display_name)',
+        )
+        .in('session_id', sessionIds)
+        .order('created_at')
+      if (error) throw error
+      return data
+    },
+  })
+}
+
+export type GameConfirmation = NonNullable<ReturnType<typeof useGameConfirmations>['data']>[number]
+
 export function useCreateSessions() {
   const queryClient = useQueryClient()
   return useMutation({

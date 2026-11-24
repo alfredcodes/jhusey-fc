@@ -32,19 +32,24 @@ import {
   monthLabel,
   timeLabel,
   useClubRules,
+  useConfirmGame,
   useIsAdmin,
+  useMyConfirmations,
   useMyExcuses,
   useNotifyAbsence,
 } from '../team/queries.ts'
+import { useProfile } from '../auth/use-profile.ts'
 import NotComingCard from './NotComingCard.tsx'
 import {
   useAbsenceNotices,
   useCreateSessions,
+  useGameConfirmations,
   useDeleteSession,
   useSessionsInMonth,
   useUpdateSession,
   useVenues,
   type AbsenceNotice,
+  type GameConfirmation,
   type SessionRow,
 } from './queries.ts'
 
@@ -56,7 +61,9 @@ export default function SessionsPage() {
   const isAdmin = useIsAdmin()
   const [month, setMonth] = useState(currentMonth())
   const sessions = useSessionsInMonth(month)
-  const notices = useAbsenceNotices(sessions.data?.map((session) => session.id) ?? [])
+  const sessionIds = sessions.data?.map((session) => session.id) ?? []
+  const notices = useAbsenceNotices(sessionIds)
+  const confirmations = useGameConfirmations(sessionIds)
   const { data: rules } = useClubRules()
   const [creating, setCreating] = useState(false)
   const today = nepalToday()
@@ -65,6 +72,10 @@ export default function SessionsPage() {
   const byGame = new Map<string, AbsenceNotice[]>()
   for (const notice of notices.data ?? []) {
     byGame.set(notice.session_id, [...(byGame.get(notice.session_id) ?? []), notice])
+  }
+  const comingByGame = new Map<string, GameConfirmation[]>()
+  for (const row of confirmations.data ?? []) {
+    comingByGame.set(row.session_id, [...(comingByGame.get(row.session_id) ?? []), row])
   }
 
   return (
@@ -140,6 +151,7 @@ export default function SessionsPage() {
                 <Th>Date</Th>
                 <Th className="hidden sm:table-cell">Venue</Th>
                 <Th>Status</Th>
+                <Th>Coming (partial)</Th>
                 <Th>Not coming</Th>
                 <Th align="right">Actions</Th>
               </tr>
@@ -151,6 +163,7 @@ export default function SessionsPage() {
                   session={session}
                   isAdmin={isAdmin}
                   notComing={byGame.get(session.id) ?? []}
+                  coming={comingByGame.get(session.id) ?? []}
                 />
               ))}
             </tbody>
@@ -167,10 +180,12 @@ function SessionRowItem({
   session,
   isAdmin,
   notComing,
+  coming,
 }: {
   session: SessionRow
   isAdmin: boolean
   notComing: AbsenceNotice[]
+  coming: GameConfirmation[]
 }) {
   const update = useUpdateSession()
   const remove = useDeleteSession()
@@ -214,6 +229,19 @@ function SessionRowItem({
           </Badge>
         )}
       </Td>
+      <Td label="Coming (partial)">
+        {coming.length === 0 ? (
+          <span className="text-xs text-gray-300">—</span>
+        ) : (
+          <div className="flex max-w-64 flex-wrap gap-1">
+            {coming.map((row) => (
+              <Badge key={row.id} tone="green">
+                {row.member?.display_name}
+              </Badge>
+            ))}
+          </div>
+        )}
+      </Td>
       <Td label="Not coming">
         {notComing.length === 0 ? (
           <span className="text-xs text-gray-300">—</span>
@@ -229,7 +257,7 @@ function SessionRowItem({
       </Td>
       <Td align="right">
         <div className="flex flex-wrap items-center justify-end gap-1.5">
-          {!cancelled && <CantComeButton session={session} />}
+          {!cancelled && <GameResponseButton session={session} />}
           {isAdmin &&
             !isPast &&
             (confirmDelete ? (
@@ -287,6 +315,69 @@ function SessionRowItem({
  * "I can't come" for a future game (deadline: 9 PM Nepal time the day before the game),
  * or "I can come after all" to withdraw it. The database enforces the deadline.
  */
+/**
+ * What a member can say about a game: regular players "Can't come"; partial-plan players
+ * "I'm coming" (they are expected only at games they confirm). Same 9 PM deadline.
+ */
+export function GameResponseButton({
+  session,
+}: {
+  session: Pick<SessionRow, 'id' | 'session_date'>
+}) {
+  const { data: profile } = useProfile()
+  const excuses = useMyExcuses()
+  if (!profile) return null
+  const excused = excuses.data?.some((excuse) => excuse.session_id === session.id)
+  if (profile.fee_plan === 'partial' && !excused) return <ImComingButton session={session} />
+  return <CantComeButton session={session} />
+}
+
+export function ImComingButton({ session }: { session: Pick<SessionRow, 'id' | 'session_date'> }) {
+  const confirmations = useMyConfirmations()
+  const confirm = useConfirmGame()
+  const [error, setError] = useState<string | null>(null)
+  const mine = confirmations.data?.some((row) => row.session_id === session.id)
+  const beforeDeadline = absenceNoticeOpen(session.session_date)
+  const send = (withdraw: boolean) =>
+    confirm.mutate(
+      { sessionId: session.id, withdraw },
+      { onError: (caught) => setError(errorMessage(caught)) },
+    )
+
+  if (mine) {
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <Badge tone="green">You’re coming</Badge>
+        {beforeDeadline && (
+          <button
+            type="button"
+            className={linkButtonClass}
+            disabled={confirm.isPending}
+            onClick={() => send(true)}
+          >
+            Withdraw
+          </button>
+        )}
+        {error && <span className="text-xs text-rose-600">{error}</span>}
+      </span>
+    )
+  }
+  if (!beforeDeadline) return null
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <button
+        type="button"
+        className={smallButtonClass}
+        disabled={confirm.isPending}
+        onClick={() => send(false)}
+      >
+        I’m coming
+      </button>
+      {error && <span className="text-xs text-rose-600">{error}</span>}
+    </span>
+  )
+}
+
 export function CantComeButton({ session }: { session: Pick<SessionRow, 'id' | 'session_date'> }) {
   const excuses = useMyExcuses()
   const notify = useNotifyAbsence()

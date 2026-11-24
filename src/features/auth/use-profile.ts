@@ -4,7 +4,10 @@ import { supabase } from '../../lib/supabase.ts'
 import { useAuth } from './auth-context.ts'
 
 // Generated from the database schema by `npm run db:types`.
-export type Profile = Pick<Tables<'profiles'>, 'id' | 'display_name' | 'role' | 'is_active'>
+export type Profile = Pick<
+  Tables<'profiles'>,
+  'id' | 'display_name' | 'role' | 'is_active' | 'fee_plan'
+>
 /** The signed-in user's own profile. RLS guarantees a member can only read their own row. */
 export function useProfile() {
   const { session } = useAuth()
@@ -16,7 +19,7 @@ export function useProfile() {
     queryFn: async (): Promise<Profile> => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, display_name, role, is_active')
+        .select('id, display_name, role, is_active, fee_plan')
         .eq('id', userId!)
         .single()
       if (error) throw error
