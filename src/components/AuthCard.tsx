@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import CourtBackdrop from './CourtBackdrop.tsx'
+import LoginBackdrop, { PhotoCredit } from './LoginBackdrop.tsx'
 
 /** Shared frame for the public sign-in pages. */
 export default function AuthCard({
@@ -12,8 +12,8 @@ export default function AuthCard({
   children: ReactNode
 }) {
   return (
-    <main className="relative isolate flex min-h-dvh items-center justify-center bg-blue-900 px-4 py-10">
-      <CourtBackdrop />
+    <main className="relative isolate flex min-h-dvh items-center justify-center bg-gray-950 px-4 py-10">
+      <LoginBackdrop />
       <div className="relative w-full max-w-sm">
         <div className="mb-6 flex items-center gap-3.5">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-400 shadow-lg ring-1 shadow-blue-950/40 ring-white/25">
@@ -34,6 +34,7 @@ export default function AuthCard({
           <div className="mt-6">{children}</div>
         </div>
       </div>
+      <PhotoCredit />
     </main>
   )
 }

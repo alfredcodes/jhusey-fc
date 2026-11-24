@@ -14,6 +14,8 @@ const PUBLIC_PRECACHE = [
   '/icons/icon-512.png',
   '/icons/maskable-512.png',
   '/icons/apple-touch-icon.png',
+  '/login-bg-portrait.webp',
+  '/login-bg-landscape.webp',
 ]
 
 /**
