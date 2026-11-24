@@ -35,7 +35,8 @@ Read the relevant files under `docs/` before implementing. `docs/decisions/archi
 - Store server-generated punch-in time, received coordinates, accuracy, configured venue and server-calculated distance. Do not trust the browser clock or client-calculated attendance status/distance.
 - Members can inspect their own complete punch-in history. Members must not edit attendance, timestamps, GPS, fines or payment records.
 - Team transparency (2026-11-22): active members read the whole team's attendance results, punch-in times, fines, payments (amount, date, method) and reports, read-only. They never see other members' GPS coordinates, distance/accuracy, phone/email, excuse notes, payment notes, payment receipts/submissions, the audit log or the Club/Futsal/Rules settings.
-- Up to two admins (owner decision 2026-11-24; was one). Admins are made only with SQL in the Supabase dashboard; no public admin registration and no in-app promotion. One admin cannot deactivate the other or reset the other's password. Do not build further multi-admin workflows unless explicitly approved.
+- Up to two admins (owner decision 2026-11-24; was one). Admins are made only with SQL in the Supabase dashboard; no public admin registration and no in-app promotion. One admin cannot deactivate the other or reset the other's password, but admins may delete any account except their own.
+- Deleting a member (2026-11-24) keeps all history (attendance, fines, payments, fees, audit); the profile row stays, the login is locked and renamed so the username can be reused, the phone is cleared. A reason is required. Do not build further multi-admin workflows unless explicitly approved.
 - NPR 200 communication-related penalty is unresolved. Do not implement it until its trigger, evidence, deadline and waiver rules are confirmed.
 - Admin corrections must preserve original attendance evidence and record who changed what, when and why.
 

@@ -4,6 +4,7 @@ import {
   FormSuccess,
   inputClass,
   labelClass,
+  dangerLinkButtonClass,
   linkButtonClass,
   primaryAutoButtonClass,
   primaryButtonClass,
@@ -26,6 +27,7 @@ import {
   Th,
   TableFrame,
 } from '../../components/ui.tsx'
+import ReasonPrompt from '../../components/ReasonPrompt.tsx'
 import { formatNpr } from '../../lib/format.ts'
 import { downloadCsv, toCsv } from '../../lib/csv.ts'
 import { errorMessage } from '../../lib/errors.ts'
@@ -35,6 +37,7 @@ import { useProfile } from '../auth/use-profile.ts'
 import {
   generatePassword,
   useCreateMember,
+  useDeleteMember,
   useMemberAccounts,
   useResetPassword,
   useUpdateMember,
@@ -51,17 +54,26 @@ type Row = TeamMember & {
   account?: MemberAccount
 }
 
-type MemberFilter = 'all' | 'active' | 'partial' | 'inactive'
+type MemberFilter = 'all' | 'active' | 'partial' | 'inactive' | 'deleted'
 
 const MEMBER_FILTERS: { value: MemberFilter; label: string }[] = [
   { value: 'all', label: 'All members' },
   { value: 'active', label: 'Active' },
   { value: 'partial', label: 'Partial plan' },
   { value: 'inactive', label: 'Inactive' },
+  { value: 'deleted', label: 'Deleted' },
 ]
 
-/** Active / Inactive = account status; Partial = on the partial fee plan (active or not). */
-function matchesFilter(row: { is_active: boolean; fee_plan: string }, filter: MemberFilter) {
+/**
+ * Active / Inactive = account status; Partial = on the partial fee plan (active or not).
+ * Deleted accounts (history kept) show only under Deleted and are not counted anywhere else.
+ */
+function matchesFilter(
+  row: { is_active: boolean; fee_plan: string; deleted_at?: string | null },
+  filter: MemberFilter,
+) {
+  if (filter === 'deleted') return Boolean(row.deleted_at)
+  if (row.deleted_at) return false
   if (filter === 'active') return row.is_active
   if (filter === 'inactive') return !row.is_active
   if (filter === 'partial') return row.fee_plan === 'partial'
@@ -80,6 +92,9 @@ export default function MembersPage() {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<Row | null>(null)
   const [resetting, setResetting] = useState<Row | null>(null)
+  const [deleting, setDeleting] = useState<Row | null>(null)
+  const deleteMember = useDeleteMember()
+  const { data: me } = useProfile()
   const [message, setMessage] = useState<string | null>(null)
 
   const all: Row[] = useMemo(() => {
@@ -165,7 +180,7 @@ export default function MembersPage() {
           label="Total members"
           icon="team"
           tone="blue"
-          value={members.data ? all.length : '–'}
+          value={members.data ? count('all') : '–'}
           unit="on the roster"
         />
         <StatCard
@@ -292,7 +307,11 @@ export default function MembersPage() {
                     )}
                   </Td>
                   <Td className="hidden sm:table-cell">
-                    {row.is_active ? (
+                    {row.deleted_at ? (
+                      <Badge tone="red" dot>
+                        Deleted
+                      </Badge>
+                    ) : row.is_active ? (
                       <Badge tone="green" dot>
                         Active
                       </Badge>
@@ -304,25 +323,37 @@ export default function MembersPage() {
                   </Td>
                   {isAdmin && (
                     <Td align="right">
-                      <div className="flex justify-end gap-1">
-                        <button
-                          type="button"
-                          className={linkButtonClass}
-                          onClick={() => setEditing(row)}
-                        >
-                          Edit
-                        </button>
-                        {/* Admins change their own password (Settings → Security). */}
-                        {row.role !== 'admin' && (
+                      {/* Deleted accounts keep their history but cannot be changed. */}
+                      {!row.deleted_at && (
+                        <div className="flex justify-end gap-1">
                           <button
                             type="button"
                             className={linkButtonClass}
-                            onClick={() => setResetting(row)}
+                            onClick={() => setEditing(row)}
                           >
-                            Reset password
+                            Edit
                           </button>
-                        )}
-                      </div>
+                          {/* Admins change their own password (Settings → Security). */}
+                          {row.role !== 'admin' && (
+                            <button
+                              type="button"
+                              className={linkButtonClass}
+                              onClick={() => setResetting(row)}
+                            >
+                              Reset password
+                            </button>
+                          )}
+                          {row.id !== me?.id && (
+                            <button
+                              type="button"
+                              className={dangerLinkButtonClass}
+                              onClick={() => setDeleting(row)}
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </Td>
                   )}
                 </tr>
@@ -344,6 +375,19 @@ export default function MembersPage() {
         />
       )}
       {resetting && <ResetPasswordModal member={resetting} onClose={() => setResetting(null)} />}
+      {deleting && (
+        <ReasonPrompt
+          title={`Delete ${deleting.display_name}?`}
+          description="They can no longer sign in and leave the team. All history stays: attendance, fines, payments and monthly fees. This cannot be undone in the app."
+          confirmLabel="Delete member"
+          onCancel={() => setDeleting(null)}
+          onConfirm={async (reason) => {
+            await deleteMember.mutateAsync({ memberId: deleting.id, reason })
+            setDeleting(null)
+            setMessage(`${deleting.display_name} was deleted. Their history is kept.`)
+          }}
+        />
+      )}
     </>
   )
 }

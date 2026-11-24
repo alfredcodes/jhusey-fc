@@ -31,6 +31,7 @@
 | GPS accuracy limit | 50 m default, per venue, admin-editable | Phase 4, 2026-11-22 |
 | Punch-in operation | punch_in() RPC: auth.uid() + now(); attendance + NPR 50 fine in one transaction; venue settings snapshotted on each attendance row | Phase 4, 2026-11-22 |
 | Absence | Derived: a scheduled session after its window closes with no punch-in, counted from the member's join date, excluding inactive periods (2026-11-24: deactivation no longer piles up absences or fines). **Since 2026-11-22:** NPR 100 (editable) absence fine unless excused; created by pg_cron every 15 min after close, only for sessions on/after `absence_fines_from` | Owner decision 2026-11-22 |
+| Delete member | Soft delete: profile + all history kept, login banned and renamed (username reusable), phone cleared, reason in audit. Admins may delete each other, never themselves; a deleted admin loses the role | Owner decision 2026-11-24 |
 | Partial players | Confirm each game ("I'm coming", 9 PM deadline); expected only at confirmed or attended games; fee and punch-in rules unchanged | Owner decision 2026-11-24 |
 | Excuses | `absence_excuses`: member notice until 9 PM Nepal time the day before the game (owner decision 2026-11-22, was midnight; can withdraw until then; `absence_notice_open()`); admin excuse any time with a reason, waiving a pending absence fine | Owner decision 2026-11-22 |
 | Payments | One payment = one or more whole pending fines of one member; no partial payments; voided (never deleted) with a reason, fines return to pending | Phase 6, 2026-11-22 |

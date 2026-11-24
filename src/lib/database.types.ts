@@ -756,6 +756,8 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           display_name: string
           fee_plan: Database['public']['Enums']['fee_plan']
           id: string
@@ -766,6 +768,8 @@ export type Database = {
         ComputedFields: never
         Insert: {
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           display_name: string
           fee_plan?: Database['public']['Enums']['fee_plan']
           id: string
@@ -775,6 +779,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           display_name?: string
           fee_plan?: Database['public']['Enums']['fee_plan']
           id?: string
@@ -782,7 +788,15 @@ export type Database = {
           role?: Database['public']['Enums']['app_role']
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'profiles_deleted_by_fkey'
+            columns: ['deleted_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
       }
       sessions: {
         Row: {
@@ -897,6 +911,7 @@ export type Database = {
         Args: { p_from: string; p_to: string; p_venue_id: string; p_weekdays: number[] }
         Returns: number
       }
+      admin_delete_member: { Args: { p_member_id: string; p_reason: string }; Returns: undefined }
       admin_excuse_absence: {
         Args: { p_member_id: string; p_reason: string; p_session_id: string }
         Returns: undefined

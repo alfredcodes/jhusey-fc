@@ -79,7 +79,7 @@ export function useTeamMembers() {
       rows(
         supabase
           .from('profiles')
-          .select('id, display_name, role, is_active, fee_plan, created_at')
+          .select('id, display_name, role, is_active, fee_plan, created_at, deleted_at')
           .order('display_name'),
       ),
   })

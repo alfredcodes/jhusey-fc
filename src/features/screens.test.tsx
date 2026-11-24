@@ -397,6 +397,52 @@ describe('Members', () => {
     expect(within(dialog).queryByRole('checkbox', { name: /Active/ })).not.toBeInTheDocument()
   })
 
+  it('the admin deletes a member with a reason; history is kept and they move to Deleted', async () => {
+    as('admin')
+    vi.mocked(supabase.functions.invoke).mockResolvedValue({
+      data: { member_id: 'm-asha' },
+      error: null,
+    } as never)
+    renderWithProviders(<MembersPage />)
+    const user = userEvent.setup()
+    const asha = (await screen.findByText('Asha')).closest('tr')!
+    const self = screen.getByText('Babu').closest('tr')!
+    expect(within(self).queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
+
+    await user.click(within(asha).getByRole('button', { name: 'Delete' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Delete Asha?' })
+    expect(dialog).toHaveTextContent('All history stays')
+    await user.type(within(dialog).getByRole('textbox'), 'Left the team')
+    await user.click(within(dialog).getByRole('button', { name: 'Delete member' }))
+    expect(supabase.functions.invoke).toHaveBeenCalledWith('admin-users', {
+      body: { action: 'delete', member_id: 'm-asha', reason: 'Left the team' },
+    })
+  })
+
+  it('deleted members show only under the Deleted filter, without actions', async () => {
+    as('admin')
+    fake.rows.profiles = [
+      ...(fake.rows.profiles as object[]),
+      {
+        id: 'm-old',
+        display_name: 'Gone Guy',
+        role: 'member',
+        is_active: false,
+        created_at: '2026-10-01T00:00:00Z',
+        deleted_at: '2026-11-20T10:00:00Z',
+      },
+    ]
+    renderWithProviders(<MembersPage />)
+    await screen.findByText('Asha')
+    expect(screen.queryByText('Gone Guy')).not.toBeInTheDocument()
+    const user = userEvent.setup()
+    await user.selectOptions(screen.getByLabelText('Show'), 'deleted')
+    const row = (await screen.findByText('Gone Guy')).closest('tr')!
+    expect(within(row).getByText('Deleted')).toBeInTheDocument()
+    expect(within(row).queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument()
+    expect(within(row).queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
+  })
+
   it('the admin creates a member and sees the initial password once', async () => {
     as('admin')
     vi.mocked(supabase.functions.invoke).mockResolvedValue({

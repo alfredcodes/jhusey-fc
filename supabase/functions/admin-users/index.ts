@@ -2,6 +2,7 @@
 //
 //   POST { action: 'create', username (or email), password, display_name, phone? }
 //   POST { action: 'reset_password', member_id, password }
+//   POST { action: 'delete', member_id, reason }   (keeps all history; locks the login)
 //
 // Why a function: creating users and setting another user's password need the
 // service-role key, which must never reach the browser. This function:
@@ -169,6 +170,48 @@ Deno.serve(async (req) => {
       .update({ must_change_password: true })
       .eq('member_id', memberId)
     await audit('member.password_reset', memberId, {})
+    return reply(200, { member_id: memberId })
+  }
+
+  // 4. Delete a member account, keeping all history (2026-11-24).
+  if (body.action === 'delete') {
+    const memberId = typeof body.member_id === 'string' ? body.member_id : ''
+    if (!UUID.test(memberId)) return fail(400, 'Choose a member.')
+    if (memberId === caller.user.id) return fail(400, 'You cannot delete your own account.')
+    const reason = typeof body.reason === 'string' ? body.reason : ''
+
+    // The database step runs as the calling admin, so the admin check, the rules and the
+    // audit log (who, when, why) are the same as for every other admin action.
+    const asCaller = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      {
+        auth: { persistSession: false, autoRefreshToken: false },
+        global: { headers: { Authorization: `Bearer ${token}` } },
+      },
+    )
+    const { error: deleteError } = await asCaller.rpc('admin_delete_member', {
+      p_member_id: memberId,
+      p_reason: reason,
+    })
+    // Already deleted: a retry after a failed login lock; just lock it again.
+    if (deleteError && deleteError.message !== 'This member is already deleted.')
+      return fail(400, deleteError.message)
+
+    // Lock the login for good and free the username for a new member. The profile and all
+    // history stay (the auth user is not removed, so nothing that refers to it breaks).
+    const { error: lockError } = await admin.auth.admin.updateUserById(memberId, {
+      email: `deleted-${memberId}@${MEMBER_LOGIN_DOMAIN}`,
+      email_confirm: true,
+      ban_duration: '876000h',
+    })
+    if (lockError) {
+      // The member is already inactive (cannot use the app); report so the admin can retry.
+      return fail(
+        500,
+        'The member was removed from the team, but the login could not be locked. Try again.',
+      )
+    }
     return reply(200, { member_id: memberId })
   }
 

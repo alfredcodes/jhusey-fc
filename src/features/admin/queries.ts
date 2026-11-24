@@ -111,6 +111,16 @@ export function useResetPassword() {
   })
 }
 
+/** Deletes a member account; all history (attendance, fines, payments, fees) is kept. */
+export function useDeleteMember() {
+  const refresh = useRefreshAll()
+  return useMutation({
+    mutationFn: (input: { memberId: string; reason: string }) =>
+      invokeAdminUsers({ action: 'delete', member_id: input.memberId, reason: input.reason }),
+    onSuccess: refresh,
+  })
+}
+
 /** A readable random password for the admin to share once (no look-alike characters). */
 export function generatePassword(length = 12) {
   const alphabet = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
